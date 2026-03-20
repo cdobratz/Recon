@@ -1,6 +1,6 @@
 # Recon CLI
 
-A Rust CLI tool that scans repositories for API endpoints, functions, database connections, and agents — analyzing security risks, API resource efficiency, and agent-data interactions. Extensible via skills, agents, and MCP servers, with support for both open-source and paid LLM backends.
+A Rust CLI tool that scans repositories for API endpoints, functions, database connections, and agents analyzing security risks, API resource efficiency, and agent-data interactions. Extensible via skills, agents, and MCP servers, with support for both open-source and paid LLM backends.
 
 ## Language Choice: Rust
 * **Why Rust over Go/C:** Official MCP SDK (`rmcp`), mature tree-sitter bindings for multi-language AST parsing, memory safety without GC, strong async ecosystem (tokio), and rich crate ecosystem for LLM clients. Go lacks official MCP SDK maturity; C is too low-level for this scope.
