@@ -1,0 +1,63 @@
+[package]
+name = "recon"
+version = "0.1.0"
+edition = "2021"
+description = "AI-powered CLI tool for scanning repos: security risks, API efficiency, agent-data interactions"
+license = "MIT"
+
+[[bin]]
+name = "recon"
+path = "src/main.rs"
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# File traversal
+walkdir = "2"
+
+# Pattern matching
+regex = "1"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Code parsing (tree-sitter)
+tree-sitter = "0.24"
+
+# Colored terminal output
+colored = "2"
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Directory paths
+dirs = "5"
+
+# Async trait support
+async-trait = "0.1"
+
+# UUID for report IDs
+uuid = { version = "1", features = ["v4"] }
+
+# Timestamps
+chrono = { version = "0.4", features = ["serde"] }
+
+# Future streaming
+futures = "0.3"
+
+[dev-dependencies]
+tempfile = "3"

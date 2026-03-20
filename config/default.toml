@@ -1,0 +1,31 @@
+[scan]
+extensions = []
+ignore_patterns = [
+    "node_modules/**",
+    ".git/**",
+    "target/**",
+    "__pycache__/**",
+    ".venv/**",
+    "vendor/**",
+    "dist/**",
+    "build/**",
+]
+max_file_size = 1048576
+categories = ["api_endpoints", "functions", "db_connections", "agents", "secrets"]
+
+[llm]
+provider = "ollama"
+max_tokens = 4096
+temperature = 0.3
+
+[mcp]
+servers = []
+serve_transport = "stdio"
+serve_port = 3000
+
+[skills]
+directory = "skills"
+
+[report]
+default_format = "terminal"
+min_severity = "info"
