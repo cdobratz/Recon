@@ -6,15 +6,15 @@ A Rust CLI tool that scans repositories for API endpoints, functions, database c
 * **Why Rust over Go/C:** Official MCP SDK (`rmcp`), mature tree-sitter bindings for multi-language AST parsing, memory safety without GC, strong async ecosystem (tokio), and rich crate ecosystem for LLM clients. Go lacks official MCP SDK maturity; C is too low-level for this scope.
 * 
 ## Core Dependencies
-* `clap` — CLI framework with subcommands
-* `tree-sitter` (v0.26+) — multi-language AST parsing (grammars: `tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-typescript`, `tree-sitter-rust`, `tree-sitter-go`, `tree-sitter-java`, etc.)
-* `rmcp` (v0.16+) — official Rust MCP SDK (client & server, stdio + HTTP/SSE transports)
-* `llm-connector` — unified LLM client (OpenAI, Anthropic, Aliyun/Qwen, Ollama)
-* `tokio` — async runtime
-* `serde` / `serde_json` — serialization
-* `reqwest` — HTTP client for API calls
-* `regex` — pattern-based scanning (secrets, connection strings)
-* `walkdir` — recursive directory traversal
+* `clap` CLI framework with subcommands
+* `tree-sitter` (v0.26+) multi-language AST parsing (grammars: `tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-typescript`, `tree-sitter-rust`, `tree-sitter-go`, `tree-sitter-java`, etc.)
+* `rmcp` (v0.16+) official Rust MCP SDK (client & server, stdio + HTTP/SSE transports)
+* `llm-connector` unified LLM client (OpenAI, Anthropic, Aliyun/Qwen, Ollama)
+* `tokio` async runtime
+* `serde` / `serde_json` serialization
+* `reqwest` HTTP client for API calls
+* `regex` pattern-based scanning (secrets, connection strings)
+* `walkdir` recursive directory traversal
 
 ## Project Structure
 
@@ -69,7 +69,7 @@ recon/
 ### Phase 1: Foundation (CLI + Scanning Engine)
 1. Initialize Cargo workspace, add core deps (`clap`, `tree-sitter`, `walkdir`, `serde`, `tokio`)
 2. Build CLI with subcommands: `scan`, `analyze`, `report`, `skill`, `agent`, `mcp`
-3. Implement tree-sitter parser registry — load grammars dynamically per file extension
+3. Implement tree-sitter parser registry load grammars dynamically per file extension
 4. Build scanners using tree-sitter queries (.scm):
     * **API endpoints:** route decorators (`@app.get`, `router.Handle`), HTTP method annotations, OpenAPI/Swagger refs
     * **Functions:** extract signatures, params, return types, cyclomatic complexity
@@ -81,14 +81,14 @@ recon/
 
 1. Implement `LlmProvider` trait with methods: `analyze()`, `summarize()`, `suggest_fix()`
 2. Build provider implementations:
-    * **Ollama** (local open-source: Qwen, Mistral, Llama, DeepSeek) — via OpenAI-compatible API at localhost:11434
-    * **Anthropic** (Claude) — via `llm-connector` or direct `reqwest` calls to `api.anthropic.com`
-    * **OpenAI** (GPT-4) — via OpenAI protocol
-    * **Mistral API** — via OpenAI-compatible endpoint
+    * **Ollama** (local open-source: Qwen, Mistral, Llama, DeepSeek) via OpenAI-compatible API at localhost:11434
+    * **Anthropic** (Claude) via `llm-connector` or direct `reqwest` calls to `api.anthropic.com`
+    * **OpenAI** (GPT-4) via OpenAI protocol
+    * **Mistral API** via OpenAI-compatible endpoint
 3. Prompt engineering for each analysis type:
     * Security: "Given this code context, identify OWASP Top 10 vulnerabilities..."
     * API efficiency: "Analyze these API calls for N+1 patterns, missing pagination..."
-    * Agent-data: "Evaluate this agent's data access scope and potential exfiltration paths..."
+    * Agent data: "Evaluate this agent's data access scope and potential exfiltration paths..."
 4. Streaming response support for real-time terminal feedback
    
 ### Phase 3: MCP Integration
