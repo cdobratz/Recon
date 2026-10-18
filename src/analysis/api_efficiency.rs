@@ -6,19 +6,30 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
     let mut risk_score: u32 = 0;
     let mut recommendations = Vec::new();
 
-    let endpoints = results.findings.iter().filter(|f| f.category == "api_endpoint").count();
-    let functions = results.findings.iter().filter(|f| f.category == "function").count();
+    let endpoints = results
+        .findings
+        .iter()
+        .filter(|f| f.category == "api_endpoint")
+        .count();
+    let functions = results
+        .findings
+        .iter()
+        .filter(|f| f.category == "function")
+        .count();
 
     // Flag repos with many endpoints but no pagination patterns
     if endpoints > 10 {
         risk_score += 15;
         recommendations.push(format!(
-            "Found {} API endpoints. Ensure pagination is implemented for list endpoints.", endpoints
+            "Found {} API endpoints. Ensure pagination is implemented for list endpoints.",
+            endpoints
         ));
     }
 
     // Flag high-parameter functions as potential API bloat
-    let high_param_fns = results.findings.iter()
+    let high_param_fns = results
+        .findings
+        .iter()
         .filter(|f| f.category == "function" && f.severity == "medium")
         .count();
     if high_param_fns > 0 {

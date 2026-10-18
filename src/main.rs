@@ -1,15 +1,15 @@
-mod config;
-mod scanner;
+mod agents;
 mod analysis;
-mod parsers;
+mod config;
 mod llm;
 mod mcp;
-mod skills;
-mod agents;
+mod parsers;
 mod report;
+mod scanner;
+mod skills;
 
-use clap::{Parser, Subcommand};
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser)]
@@ -36,7 +36,7 @@ enum Commands {
         /// Path to the repository to scan
         path: String,
 
-        /// Output format: terminal, json, sarif, mermaid
+        /// Output format: terminal, json, sarif, mermaid, cyclonedx
         #[arg(short, long, default_value = "terminal")]
         format: String,
 
@@ -44,9 +44,17 @@ enum Commands {
         #[arg(long, value_delimiter = ',')]
         only: Option<Vec<String>>,
 
-        /// Paths to ignore (glob patterns)
+        /// Paths to ignore (gitignore syntax)
         #[arg(long, value_delimiter = ',')]
         ignore: Option<Vec<String>>,
+
+        /// Report only findings that are not in this baseline. Exits 1 when any remain.
+        #[arg(long)]
+        baseline: Option<String>,
+
+        /// Write a baseline of the current findings
+        #[arg(long)]
+        write_baseline: Option<String>,
     },
 
     /// Run AI-powered deep analysis on scan results
@@ -72,7 +80,7 @@ enum Commands {
         /// Path to the repository
         path: String,
 
-        /// Output format: terminal, json, sarif, mermaid
+        /// Output format: terminal, json, sarif, mermaid, cyclonedx
         #[arg(short, long, default_value = "terminal")]
         format: String,
 
@@ -189,20 +197,60 @@ async fn main() -> Result<()> {
     let cfg = config::ReconConfig::load(cli.config.as_deref())?;
 
     match cli.command {
-        Commands::Scan { path, format, only, ignore } => {
+        Commands::Scan {
+            path,
+            format,
+            only,
+            ignore,
+            baseline,
+            write_baseline,
+        } => {
             tracing::info!("Scanning repository: {}", path);
-            let findings = scanner::run_scan(&path, &cfg, only.as_deref(), ignore.as_deref()).await?;
+            let findings = scanner::run_scan(
+                &path,
+                &cfg,
+                scanner::ScanOptions {
+                    only: only.as_deref(),
+                    ignore: ignore.as_deref(),
+                    baseline: baseline.as_deref().map(std::path::Path::new),
+                    write_baseline: write_baseline.as_deref().map(std::path::Path::new),
+                },
+            )
+            .await?;
+            let fail_on_new = findings.fail_on_new;
+            let new_count = findings.findings.len();
             report::output(&findings, &format, None)?;
+            if fail_on_new {
+                eprintln!("recon: {new_count} new finding(s) are not in the baseline");
+                let _ = std::io::Write::flush(&mut std::io::stdout());
+                std::process::exit(1);
+            }
         }
-        Commands::Analyze { path, provider, model, categories } => {
+        Commands::Analyze {
+            path,
+            provider,
+            model,
+            categories,
+        } => {
             tracing::info!("Analyzing repository: {}", path);
-            let findings = scanner::run_scan(&path, &cfg, None, None).await?;
-            let results = analysis::run_analysis(&findings, &provider, model.as_deref(), categories.as_deref(), &cfg).await?;
+            let findings = scanner::run_scan(&path, &cfg, scanner::ScanOptions::default()).await?;
+            let results = analysis::run_analysis(
+                &findings,
+                &provider,
+                model.as_deref(),
+                categories.as_deref(),
+                &cfg,
+            )
+            .await?;
             report::output_analysis(&results, "terminal", None)?;
         }
-        Commands::Report { path, format, output } => {
+        Commands::Report {
+            path,
+            format,
+            output,
+        } => {
             tracing::info!("Generating report for: {}", path);
-            let findings = scanner::run_scan(&path, &cfg, None, None).await?;
+            let findings = scanner::run_scan(&path, &cfg, scanner::ScanOptions::default()).await?;
             report::output(&findings, &format, output.as_deref())?;
         }
         Commands::Skill { action } => match action {

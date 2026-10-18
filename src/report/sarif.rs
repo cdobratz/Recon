@@ -107,6 +107,7 @@ mod tests {
             scan_duration_ms: 0,
             inventory: Default::default(),
             inventory_mermaid: String::new(),
+            fail_on_new: false,
         }
     }
 

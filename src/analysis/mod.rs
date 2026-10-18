@@ -1,6 +1,6 @@
-pub mod security;
-pub mod api_efficiency;
 pub mod agent_data;
+pub mod api_efficiency;
+pub mod security;
 
 use crate::config::ReconConfig;
 use crate::scanner::ScanResults;

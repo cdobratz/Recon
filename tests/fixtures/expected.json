@@ -63,6 +63,47 @@
     "graph/chain/.mcp.json": [
       "recon/mcp-filesystem-root",
       "recon/mcp-secret-in-env"
+    ],
+    "python/calls.py": [
+      "recon/shell-execution",
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "javascript/calls.js": [
+      "recon/shell-execution",
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "typescript/calls.ts": [
+      "recon/shell-execution",
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "go/calls.go": [
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "rust/calls.rs": [
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "ignore/kept.py": [
+      "recon/shell-execution"
+    ],
+    "ignore/keep.gen.py": [
+      "recon/shell-execution"
+    ],
+    "ignore/skip.gen.py": [],
+    "ignore/local_skip.py": [],
+    "suppress/previous.py": [
+      "recon/shell-execution"
+    ],
+    "suppress/same_line.js": [
+      "recon/shell-execution"
+    ],
+    "suppress/hash_comment.py": [],
+    "suppress/previous.go": [
+      "recon/shell-execution"
     ]
   }
 }

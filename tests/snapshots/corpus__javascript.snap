@@ -1,0 +1,106 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "agent",
+    "detector": "regex",
+    "file": "calls.js",
+    "line": 1,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "const { execSync } = require(\"child_process\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.js",
+    "line": 2,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "execSync(\"ls\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.js",
+    "line": 3,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec(\"ls\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.js",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "app.get(\"/items\", (req, res) => res.send(\"ok\"));",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.js",
+    "line": 2,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "router.post(\"/items\", handler);",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.js",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "function greet(name) {",
+    "title": "Function: greet(1 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.js",
+    "line": 5,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "export async function load(a, b) {",
+    "title": "Function: load(2 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.js",
+    "line": 9,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "const arrow = (x, y) => x + y;",
+    "title": "Function: arrow(2 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.js",
+    "line": 11,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "const named = function (x) {",
+    "title": "Function: named(1 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.js",
+    "line": 16,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "save(row) {",
+    "title": "Function: save(1 params)"
+  }
+]

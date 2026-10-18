@@ -15,13 +15,15 @@ Recon does not start MCP servers to read their tool lists. Config files are pars
 | Agent/MCP config inventory (JSON + Mermaid) | Implemented |
 | MCP rules (unpinned npx/uvx, mcp-remote CVE-2025-6514, secrets in env, filesystem `/` or `~`, shell without approval) | Implemented |
 | "Agent can spend cloud money" rule, with remediation pointing at AzGuard | Implemented |
-| GitHub Actions CI (build, test, clippy) | Implemented |
-| Tree-sitter grammars and AST queries | Planned |
+| Tree-sitter queries for Python, JavaScript, TypeScript, Go, and Rust (functions, API endpoints, shell vs database calls) | Implemented |
+| Regex fallback for other languages | Implemented |
+| Default ignores, `.gitignore`, and `.reconignore` | Implemented |
+| Inline `recon:ignore` suppressions and a baseline file | Implemented |
+| CycloneDX 1.6 AI-BOM export (`--format cyclonedx`) | Implemented |
+| GitHub Actions CI (`cargo fmt --check`, build, test, clippy) | Implemented |
 | LLM-backed analysis (`--provider ollama` and hosted models) | Planned |
 | MCP client and server (`recon mcp serve` / `connect`) | Planned |
 | Skills and autonomous agent workflows | Planned |
-| Inline `recon:ignore` suppressions and a baseline file | Planned |
-| CycloneDX AI-BOM export | Planned |
 
 ## Static scan guarantee
 
@@ -37,10 +39,17 @@ recon scan <path>
 recon scan <path> --format json
 recon scan <path> --format sarif
 recon scan <path> --format mermaid
+recon scan <path> --format cyclonedx
+recon scan <path> --write-baseline recon-baseline.json
+recon scan <path> --baseline recon-baseline.json
 recon report <path> --format sarif
 ```
 
-JSON output includes `inventory` (agent → MCP server/tool → data store → credential) and `inventory_mermaid`. `--format mermaid` prints only the diagram.
+JSON output includes `inventory` (agent → MCP server/tool → data store → credential) and `inventory_mermaid`. `--format mermaid` prints only the diagram. `--format cyclonedx` prints a CycloneDX 1.6 JSON document of that inventory (agents, MCP servers, tools, data stores, credentials).
+
+`--baseline` prints only findings whose fingerprint is not already in the file and exits 1 when any remain, so CI fails on new findings. `--write-baseline` records the current findings and does not fail the run. A fingerprint is the SHA-256 of the rule id, the path relative to the scan root, and the snippet with whitespace collapsed. Line numbers are not part of it.
+
+Suppress a finding by putting `recon:ignore <rule-id>` on the same line or the previous line. `//`, `#`, and `/* */` comments all work. Several rule ids can be separated by spaces or commas.
 
 ## Rules
 
@@ -68,7 +77,7 @@ cargo test
 cargo clippy --all-targets -- -D warnings
 ```
 
-Default ignores include `.git`, `node_modules`, `target`, `vendor`, `dist`, `build`, and `.go` (a vendored Go toolchain).
+Default ignores include `.git`, `node_modules`, `target`, `vendor`, `dist`, `build`, `__pycache__`, `.venv`, and `.go` (a vendored Go toolchain). The walk also honors `.gitignore` and `.reconignore` (gitignore syntax) and skips binary files (known extensions or a NUL byte) and files larger than `max_file_size` (1 MiB by default). Hidden paths such as `.cursor/mcp.json` are still scanned.
 
 ## Project structure
 
@@ -80,14 +89,15 @@ recon/
 │   ├── config.rs
 │   ├── scanner/          # in-process scanners, MCP inventory, rules
 │   ├── analysis/         # rule-based scores (LLM planned)
-│   ├── parsers/          # language detection (tree-sitter AST planned)
+│   ├── parsers/          # tree-sitter parsers; regex fallback for other languages
 │   ├── llm/              # provider stubs (not called by scan)
 │   ├── mcp/              # serve/connect stubs
 │   ├── skills/
 │   ├── agents/
 │   └── report/           # terminal, JSON, SARIF, Mermaid
+├── queries/              # tree-sitter .scm queries, one file per language
 ├── config/default.toml
-└── tests/fixtures/       # rule fixtures and expected results
+└── tests/fixtures/       # rule fixtures, language corpus, and expected results
 ```
 
 ## CLI
@@ -95,6 +105,9 @@ recon/
 ```
 recon scan <path>
 recon scan <path> --format json
+recon scan <path> --format cyclonedx
+recon scan <path> --write-baseline recon-baseline.json
+recon scan <path> --baseline recon-baseline.json
 recon scan <path> --only agents,mcp
 recon analyze <path>
 recon report <path> --format sarif

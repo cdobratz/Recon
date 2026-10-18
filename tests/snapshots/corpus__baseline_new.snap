@@ -1,0 +1,26 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "main.go",
+    "line": 6,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func extra() {",
+    "title": "Function: extra(0 params)"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "main.go",
+    "line": 7,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec.Command(\"aws\").Run()",
+    "title": "Shell or code execution call"
+  }
+]

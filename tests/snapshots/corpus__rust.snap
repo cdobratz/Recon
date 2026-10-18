@@ -1,0 +1,96 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "calls.rs",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "fn run(db: &Db) {",
+    "title": "Function: run(1 params)"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.rs",
+    "line": 2,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "std::process::Command::new(\"az\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.rs",
+    "line": 3,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "Command::new(\"terraform\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "endpoints.rs",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "fn routes() {",
+    "title": "Function: routes(0 params)"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.rs",
+    "line": 2,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "app.route(\"/items\", get(list_items));",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.rs",
+    "line": 3,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "web::resource(\"/health\");",
+    "title": "API endpoint: /health"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.rs",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "pub fn greet(name: &str) -> &str {",
+    "title": "Function: greet(1 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.rs",
+    "line": 6,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "fn save(&self, row: &str) {}",
+    "title": "Function: save(2 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.rs",
+    "line": 9,
+    "rule_id": "",
+    "severity": "medium",
+    "snippet": "async fn load(a: i32, b: i32, c: i32, d: i32, e: i32, f: i32, g: i32) {}",
+    "title": "Function: load(7 params)"
+  }
+]

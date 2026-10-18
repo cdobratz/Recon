@@ -1,0 +1,16 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "api_endpoint",
+    "detector": "regex",
+    "file": "schema.graphql",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "type Query {",
+    "title": "API endpoint: type Query {"
+  }
+]

@@ -6,12 +6,15 @@
 
 pub mod agents;
 pub mod api_endpoints;
+pub mod baseline;
 pub mod db_connections;
 pub mod execution;
 pub mod functions;
 pub mod mcp_inventory;
 pub mod rules;
 pub mod secrets;
+pub mod suppress;
+pub mod walk;
 
 use crate::config::ReconConfig;
 use crate::parsers::ParserRegistry;
@@ -19,7 +22,6 @@ use anyhow::Result;
 use mcp_inventory::InventoryGraph;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use walkdir::WalkDir;
 
 /// A single finding from any scanner
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,14 +59,25 @@ pub struct ScanResults {
     /// Mermaid `flowchart` for `inventory`.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub inventory_mermaid: String,
+    /// Set when `--baseline` is used and at least one finding is not in it.
+    #[serde(skip)]
+    pub fail_on_new: bool,
 }
 
-/// Run all enabled scanners against a repository path
+/// Options for one `recon scan` invocation.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ScanOptions<'a> {
+    pub only: Option<&'a [String]>,
+    pub ignore: Option<&'a [String]>,
+    pub baseline: Option<&'a Path>,
+    pub write_baseline: Option<&'a Path>,
+}
+
+/// Run all enabled scanners against a repository path.
 pub async fn run_scan(
     repo_path: &str,
     config: &ReconConfig,
-    only: Option<&[String]>,
-    ignore: Option<&[String]>,
+    options: ScanOptions<'_>,
 ) -> Result<ScanResults> {
     let start = std::time::Instant::now();
     let mut findings = Vec::new();
@@ -72,12 +85,12 @@ pub async fn run_scan(
     let mut files_scanned = 0;
     let mut parser_registry = ParserRegistry::new();
 
-    let categories: Vec<&str> = match only {
+    let categories: Vec<&str> = match options.only {
         Some(cats) => cats.iter().map(|s| s.as_str()).collect(),
         None => config.scan.categories.iter().map(|s| s.as_str()).collect(),
     };
 
-    let ignore_patterns: Vec<&str> = match ignore {
+    let ignore_patterns: Vec<&str> = match options.ignore {
         Some(pats) => pats.iter().map(|s| s.as_str()).collect(),
         None => config
             .scan
@@ -88,36 +101,37 @@ pub async fn run_scan(
     };
 
     let repo = Path::new(repo_path);
-    for entry in WalkDir::new(repo).into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-
-        // Skip directories
-        if path.is_dir() {
+    let skipped_outputs = [options.baseline, options.write_baseline];
+    for path in walk::list_files(repo, &ignore_patterns)? {
+        if skipped_outputs
+            .iter()
+            .flatten()
+            .any(|skip| same_file(&path, skip))
+        {
             continue;
         }
-
-        // Skip ignored paths
-        let rel_path = path.strip_prefix(repo).unwrap_or(path);
-        let rel_str = rel_path.to_string_lossy();
-        if should_ignore(&rel_str, &ignore_patterns) {
-            continue;
-        }
-
-        // Skip files over size limit
-        if let Ok(meta) = std::fs::metadata(path) {
+        if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > config.scan.max_file_size {
                 continue;
             }
         }
+        if walk::is_binary_extension(&path) {
+            continue;
+        }
 
-        // Read file
-        let source = match std::fs::read_to_string(path) {
-            Ok(s) => s,
-            Err(_) => continue, // Skip binary files
+        let bytes = match std::fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(_) => continue,
+        };
+        if walk::looks_binary(&bytes) {
+            continue;
+        }
+        let source = match String::from_utf8(bytes) {
+            Ok(source) => source,
+            Err(_) => continue,
         };
 
-        // Parse with tree-sitter (if supported language)
-        let parsed = parser_registry.parse_file(path, &source)?;
+        let parsed = parser_registry.parse_file(&path, &source)?;
         let lang_name = parsed
             .as_ref()
             .map(|p| p.language.name())
@@ -125,29 +139,45 @@ pub async fn run_scan(
 
         files_scanned += 1;
 
-        // Run enabled scanners
+        let mut file_findings = Vec::new();
         if categories.contains(&"api_endpoints") {
-            findings.extend(api_endpoints::scan(path, &source, lang_name));
+            file_findings.extend(api_endpoints::scan(
+                &path,
+                &source,
+                lang_name,
+                parsed.as_ref(),
+            ));
         }
         if categories.contains(&"functions") {
-            findings.extend(functions::scan(path, &source, lang_name));
+            file_findings.extend(functions::scan(&path, &source, lang_name, parsed.as_ref()));
         }
         if categories.contains(&"db_connections") {
-            findings.extend(db_connections::scan(path, &source, lang_name));
+            file_findings.extend(db_connections::scan(&path, &source, lang_name));
         }
         if categories.contains(&"agents") {
-            findings.extend(agents::scan(path, &source, lang_name));
+            file_findings.extend(agents::scan(&path, &source, lang_name, parsed.as_ref()));
         }
         if categories.contains(&"secrets") {
-            findings.extend(secrets::scan(path, &source, lang_name));
+            file_findings.extend(secrets::scan(&path, &source, lang_name));
         }
         // Agent and MCP inventory are static parses of config text. They never
         // launch the servers or commands named in those files.
         if categories.iter().any(|c| *c == "agents" || *c == "mcp") {
-            let mcp = mcp_inventory::scan(path, &source, lang_name);
-            findings.extend(mcp.findings);
+            let mcp = mcp_inventory::scan(&path, &source, lang_name);
+            file_findings.extend(mcp.findings);
             inventory.merge(mcp.inventory);
         }
+        findings.extend(suppress::apply(file_findings, &source));
+    }
+
+    if let Some(path) = options.write_baseline {
+        baseline::write(path, &findings, repo)?;
+    }
+    let mut fail_on_new = false;
+    if let Some(path) = options.baseline {
+        let loaded = baseline::load(path)?;
+        findings = baseline::filter(findings, repo, &loaded);
+        fail_on_new = options.write_baseline.is_none() && !findings.is_empty();
     }
 
     let duration = start.elapsed().as_millis() as u64;
@@ -158,48 +188,16 @@ pub async fn run_scan(
         scan_duration_ms: duration,
         inventory,
         inventory_mermaid,
+        fail_on_new,
     })
 }
 
-/// Check if a relative path matches any ignore pattern
-fn should_ignore(rel_path: &str, patterns: &[&str]) -> bool {
-    let normalized = rel_path.replace('\\', "/");
-    for pattern in patterns {
-        let pat = pattern.trim_end_matches("/**").trim_end_matches('/');
-        if pat.is_empty() {
-            continue;
-        }
-        if normalized == pat
-            || normalized.starts_with(&format!("{pat}/"))
-            || normalized.contains(&format!("/{pat}/"))
-        {
-            return true;
-        }
+fn same_file(path: &Path, other: &Path) -> bool {
+    if path == other {
+        return true;
     }
-    false
-}
-
-#[cfg(test)]
-mod tests {
-    use super::should_ignore;
-
-    #[test]
-    fn ignore_matches_directory_segments() {
-        let patterns = &[
-            ".git/**",
-            ".go/**",
-            "node_modules/**",
-            "vendor/**",
-            "target/**",
-            "dist/**",
-        ];
-        assert!(should_ignore(".git/config", patterns));
-        assert!(should_ignore(".go/go/src/fmt/print.go", patterns));
-        assert!(should_ignore("vendor/pkg/mod.go", patterns));
-        assert!(should_ignore("node_modules/leftpad/index.js", patterns));
-        assert!(!should_ignore(".github/workflows/ci.yml", patterns));
-        assert!(!should_ignore(".goreleaser.yaml", patterns));
-        assert!(!should_ignore("internal/storage/sqlite.go", patterns));
-        assert!(!should_ignore("cmd/azguard/main.go", patterns));
+    match (path.canonicalize(), other.canonicalize()) {
+        (Ok(left), Ok(right)) => left == right,
+        _ => false,
     }
 }

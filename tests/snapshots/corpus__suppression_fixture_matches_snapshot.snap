@@ -1,0 +1,56 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "previous.go",
+    "line": 5,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func run() {",
+    "title": "Function: run(0 params)"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "previous.go",
+    "line": 8,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec.Command(\"aws\").Run()",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "previous.go",
+    "line": 11,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func runBlock() {",
+    "title": "Function: runBlock(0 params)"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "previous.py",
+    "line": 4,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "os.system(\"whoami\")",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "same_line.js",
+    "line": 1,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec(\"ls\");",
+    "title": "Shell or code execution call"
+  }
+]
