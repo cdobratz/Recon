@@ -7,7 +7,8 @@ pub fn print_scan(results: &ScanResults) {
     println!("\n{}", "=== Recon Scan Results ===".bold());
     println!("Files scanned: {}", results.files_scanned);
     println!("Scan time: {}ms", results.scan_duration_ms);
-    println!("Findings: {}\n", results.findings.len());
+    println!("Findings: {}", results.findings.len());
+    println!("Agent/MCP inventory: {} agent(s)\n", results.inventory.agents.len());
 
     // Group by severity
     let critical: Vec<_> = results.findings.iter().filter(|f| f.severity == "critical").collect();

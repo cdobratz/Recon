@@ -71,6 +71,7 @@ pub fn remove_skill(name: &str, config: &ReconConfig) -> Result<()> {
 }
 
 /// Load all skills from the skills directory
+#[allow(dead_code)]
 pub fn load_skills(config: &ReconConfig) -> Result<Vec<SkillDefinition>> {
     let skills_dir = Path::new(&config.skills.directory);
     let mut skills = Vec::new();

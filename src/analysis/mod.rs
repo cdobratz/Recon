@@ -27,10 +27,10 @@ pub struct AnalysisReport {
 /// Run AI-powered analysis on scan results
 pub async fn run_analysis(
     scan_results: &ScanResults,
-    provider: &str,
-    model: Option<&str>,
+    _provider: &str,
+    _model: Option<&str>,
     categories: Option<&[String]>,
-    config: &ReconConfig,
+    _config: &ReconConfig,
 ) -> Result<AnalysisResults> {
     let cats: Vec<&str> = categories
         .map(|c| c.iter().map(|s| s.as_str()).collect())

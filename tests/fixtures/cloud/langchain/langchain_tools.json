@@ -1,0 +1,10 @@
+{
+  "agent": "langchain",
+  "framework": "LangChain",
+  "tools": [
+    {
+      "name": "pulumi_up",
+      "description": "Run pulumi up to provision cloud resources"
+    }
+  ]
+}

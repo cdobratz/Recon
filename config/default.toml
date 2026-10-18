@@ -9,9 +9,10 @@ ignore_patterns = [
     "vendor/**",
     "dist/**",
     "build/**",
+    ".go/**",
 ]
 max_file_size = 1048576
-categories = ["api_endpoints", "functions", "db_connections", "agents", "secrets"]
+categories = ["api_endpoints", "functions", "db_connections", "agents", "mcp", "secrets"]
 
 [llm]
 provider = "ollama"

@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "api": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "API_TOKEN": "${env:API_TOKEN}"
+      }
+    }
+  }
+}

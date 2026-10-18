@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "fmt-vscode": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@example/notes@1.0.0"]
+    }
+  }
+}

@@ -1,3 +1,5 @@
+use super::execution::{classify_execution, ExecutionClass};
+use super::rules;
 use super::Finding;
 use regex::Regex;
 use std::collections::HashMap;
@@ -48,13 +50,6 @@ static PATTERNS: LazyLock<Vec<AgentPattern>> = LazyLock::new(|| {
             severity: "info",
             description: "OpenAI Assistants/function calling API",
         },
-        // Agent with tool/code execution (elevated risk)
-        AgentPattern {
-            regex: Regex::new(r#"(?i)(?:code_execution|exec\s*\(|subprocess|shell_tool|BashTool|PythonREPLTool)"#).unwrap(),
-            agent_type: "Code Execution",
-            severity: "high",
-            description: "Agent with code/shell execution capability",
-        },
         // Agent with unrestricted data access
         AgentPattern {
             regex: Regex::new(r#"(?i)(?:allow_dangerous|unrestricted|all_permissions|admin_access|root_access)"#).unwrap(),
@@ -88,6 +83,25 @@ pub fn scan(path: &Path, source: &str, language: &str) -> Vec<Finding> {
                     metadata,
                 });
             }
+        }
+        if classify_execution(line) == ExecutionClass::Shell {
+            let rule = rules::by_id(rules::SHELL_EXECUTION).expect("shell rule");
+            let mut metadata = HashMap::new();
+            metadata.insert("agent_type".into(), "Code Execution".into());
+            metadata.insert("rule_id".into(), rule.id.into());
+            metadata.insert("help".into(), rule.help.into());
+            metadata.insert("asi".into(), rule.asi.join(","));
+            findings.push(Finding {
+                category: "agent".into(),
+                severity: rule.severity.into(),
+                file: file_str.clone(),
+                line: line_num + 1,
+                title: rule.short_description.into(),
+                description: rule.help.into(),
+                snippet: line.trim().to_string(),
+                language: language.into(),
+                metadata,
+            });
         }
     }
 

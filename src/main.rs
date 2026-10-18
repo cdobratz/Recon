@@ -36,7 +36,7 @@ enum Commands {
         /// Path to the repository to scan
         path: String,
 
-        /// Output format
+        /// Output format: terminal, json, sarif, mermaid
         #[arg(short, long, default_value = "terminal")]
         format: String,
 
@@ -72,7 +72,7 @@ enum Commands {
         /// Path to the repository
         path: String,
 
-        /// Output format: json, sarif, terminal
+        /// Output format: terminal, json, sarif, mermaid
         #[arg(short, long, default_value = "terminal")]
         format: String,
 

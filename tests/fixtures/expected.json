@@ -1,0 +1,68 @@
+{
+  "files": {
+    "shell/db_exec.go": [],
+    "shell/exec_command.go": [
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "shell/python_subprocess.py": [
+      "recon/shell-execution",
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "shell/node_child.js": [
+      "recon/shell-execution",
+      "recon/shell-execution",
+      "recon/shell-execution"
+    ],
+    "mcp/unpinned/.mcp.json": [
+      "recon/mcp-unpinned-package"
+    ],
+    "mcp/pinned/.mcp.json": [],
+    "mcp/uvx-unpinned/mcp.json": [
+      "recon/mcp-unpinned-package"
+    ],
+    "mcp/uvx-pinned/mcp.json": [],
+    "mcp/mcp-remote-vuln/.mcp.json": [
+      "recon/mcp-remote-cve-2025-6514"
+    ],
+    "mcp/mcp-remote-safe/.mcp.json": [],
+    "mcp/mcp-remote-low/.mcp.json": [],
+    "mcp/mcp-remote-floor/.mcp.json": [
+      "recon/mcp-remote-cve-2025-6514"
+    ],
+    "mcp/secret-env/.cursor/mcp.json": [
+      "recon/mcp-secret-in-env"
+    ],
+    "mcp/secret-ref/.vscode/mcp.json": [],
+    "mcp/fs-root/mcp.json": [
+      "recon/mcp-filesystem-root"
+    ],
+    "mcp/fs-home/.mcp.json": [
+      "recon/mcp-filesystem-root"
+    ],
+    "mcp/fs-ok/.mcp.json": [],
+    "mcp/shell-no-approval/.mcp.json": [
+      "recon/mcp-shell-without-approval"
+    ],
+    "mcp/shell-approved/.mcp.json": [],
+    "cloud/claude-code/.mcp.json": [
+      "recon/agent-cloud-spend"
+    ],
+    "cloud/cursor/.cursor/mcp.json": [
+      "recon/agent-cloud-spend"
+    ],
+    "cloud/langchain/langchain_tools.json": [
+      "recon/agent-cloud-spend"
+    ],
+    "formats/generic/mcp.json": [],
+    "formats/claude-code/.mcp.json": [],
+    "formats/cursor/.cursor/mcp.json": [],
+    "formats/vscode/.vscode/mcp.json": [],
+    "formats/claude-desktop/claude_desktop_config.json": [],
+    "graph/chain/.mcp.json": [
+      "recon/mcp-filesystem-root",
+      "recon/mcp-secret-in-env"
+    ]
+  }
+}

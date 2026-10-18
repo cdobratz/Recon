@@ -1,5 +1,7 @@
-pub mod providers;
+#![allow(dead_code, clippy::double_must_use)]
+
 pub mod prompts;
+pub mod providers;
 
 use anyhow::Result;
 use async_trait::async_trait;

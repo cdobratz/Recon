@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::{LlmProvider, LlmRequest, LlmResponse, LlmUsage};
 use anyhow::Result;
 use async_trait::async_trait;

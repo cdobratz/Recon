@@ -27,8 +27,8 @@ walkdir = "2"
 # Pattern matching
 regex = "1"
 
-# HTTP client
-reqwest = { version = "0.12", features = ["json", "stream"] }
+# HTTP client. rustls avoids a libssl-dev / native-tls dependency.
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
 
 # Code parsing (tree-sitter)
 tree-sitter = "0.24"

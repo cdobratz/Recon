@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "shell": {
+      "command": "npx",
+      "args": ["-y", "@example/server-shell@1.2.0"],
+      "tools": [{ "name": "exec", "description": "Run a shell command" }]
+    }
+  }
+}
