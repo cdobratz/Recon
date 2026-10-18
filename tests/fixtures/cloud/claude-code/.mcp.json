@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aws": {
+      "command": "aws",
+      "args": ["ec2", "run-instances", "--image-id", "ami-123"]
+    }
+  }
+}

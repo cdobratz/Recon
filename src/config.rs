@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Top-level configuration for Recon
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ReconConfig {
     #[serde(default)]
     pub scan: ScanConfig,
@@ -104,6 +104,7 @@ fn default_ignore_patterns() -> Vec<String> {
         "vendor/**".into(),
         "dist/**".into(),
         "build/**".into(),
+        ".go/**".into(),
     ]
 }
 
@@ -117,6 +118,7 @@ fn default_scan_categories() -> Vec<String> {
         "functions".into(),
         "db_connections".into(),
         "agents".into(),
+        "mcp".into(),
         "secrets".into(),
     ]
 }
@@ -201,18 +203,6 @@ impl Default for ReportConfig {
         Self {
             default_format: default_report_format(),
             min_severity: default_min_severity(),
-        }
-    }
-}
-
-impl Default for ReconConfig {
-    fn default() -> Self {
-        Self {
-            scan: ScanConfig::default(),
-            llm: LlmConfig::default(),
-            mcp: McpConfig::default(),
-            skills: SkillsConfig::default(),
-            report: ReportConfig::default(),
         }
     }
 }

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fmt-claude-code": {
+      "command": "npx",
+      "args": ["-y", "@example/notes@1.0.0"]
+    }
+  }
+}

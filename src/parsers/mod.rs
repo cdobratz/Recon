@@ -1,4 +1,6 @@
-use anyhow::{Context, Result};
+#![allow(dead_code)]
+
+use anyhow::Result;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -65,9 +67,7 @@ impl ParserRegistry {
     /// Parse source code for a given file path
     /// Returns the AST if the language is supported
     pub fn parse_file(&mut self, path: &Path, source: &str) -> Result<Option<ParsedFile>> {
-        let ext = path.extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
         let language = match Language::from_extension(ext) {
             Some(lang) => lang,

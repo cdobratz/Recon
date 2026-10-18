@@ -6,7 +6,7 @@ use agent::AgentConfig;
 use std::path::Path;
 
 /// Add an agent from a config file
-pub fn add_agent(config_path: &str, recon_config: &ReconConfig) -> Result<()> {
+pub fn add_agent(config_path: &str, _recon_config: &ReconConfig) -> Result<()> {
     let path = Path::new(config_path);
     if !path.exists() {
         anyhow::bail!("Agent config not found: {}", config_path);

@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    name: build, test, clippy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install strace
+        run: sudo apt-get update && sudo apt-get install -y strace
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Build
+        run: cargo build --locked
+
+      - name: Test
+        run: cargo test --locked -- --nocapture
+
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
