@@ -6,11 +6,19 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
     let mut risk_score: u32 = 0;
     let mut recommendations = Vec::new();
 
-    let secrets = results.findings.iter().filter(|f| f.category == "secret").count();
-    let db_cred_issues = results.findings.iter()
+    let secrets = results
+        .findings
+        .iter()
+        .filter(|f| f.category == "secret")
+        .count();
+    let db_cred_issues = results
+        .findings
+        .iter()
         .filter(|f| f.category == "db_connection" && f.severity == "high")
         .count();
-    let dangerous_agents = results.findings.iter()
+    let dangerous_agents = results
+        .findings
+        .iter()
         .filter(|f| f.category == "agent" && (f.severity == "high" || f.severity == "critical"))
         .count();
 
@@ -31,17 +39,21 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
     if dangerous_agents > 0 {
         risk_score += (dangerous_agents as u32 * 12).min(30);
         recommendations.push(format!(
-            "Found {} agent(s) with elevated permissions. Apply principle of least privilege.", dangerous_agents
+            "Found {} agent(s) with elevated permissions. Apply principle of least privilege.",
+            dangerous_agents
         ));
     }
 
-    let sql_injection = results.findings.iter()
+    let sql_injection = results
+        .findings
+        .iter()
         .filter(|f| f.category == "db_connection" && f.description.contains("SQL injection"))
         .count();
     if sql_injection > 0 {
         risk_score += (sql_injection as u32 * 15).min(40);
         recommendations.push(format!(
-            "Found {} potential SQL injection point(s). Use parameterized queries.", sql_injection
+            "Found {} potential SQL injection point(s). Use parameterized queries.",
+            sql_injection
         ));
     }
 

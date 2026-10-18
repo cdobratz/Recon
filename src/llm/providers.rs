@@ -45,7 +45,9 @@ impl LlmProvider for OllamaProvider {
         })
     }
 
-    fn name(&self) -> &str { "ollama" }
+    fn name(&self) -> &str {
+        "ollama"
+    }
 
     async fn is_available(&self) -> bool {
         self.client.get(&self.base_url).send().await.is_ok()
@@ -75,11 +77,15 @@ impl LlmProvider for AnthropicProvider {
         let url = format!("{}/v1/messages", self.base_url);
 
         // Convert messages to Anthropic format (separate system from user messages)
-        let system = request.messages.iter()
+        let system = request
+            .messages
+            .iter()
             .find(|m| m.role == "system")
             .map(|m| m.content.clone());
 
-        let messages: Vec<serde_json::Value> = request.messages.iter()
+        let messages: Vec<serde_json::Value> = request
+            .messages
+            .iter()
             .filter(|m| m.role != "system")
             .map(|m| serde_json::json!({"role": m.role, "content": m.content}))
             .collect();
@@ -95,7 +101,9 @@ impl LlmProvider for AnthropicProvider {
             body["system"] = serde_json::Value::String(sys);
         }
 
-        let resp = self.client.post(&url)
+        let resp = self
+            .client
+            .post(&url)
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("content-type", "application/json")
@@ -119,7 +127,9 @@ impl LlmProvider for AnthropicProvider {
         })
     }
 
-    fn name(&self) -> &str { "anthropic" }
+    fn name(&self) -> &str {
+        "anthropic"
+    }
 
     async fn is_available(&self) -> bool {
         !self.api_key.is_empty()
@@ -154,7 +164,9 @@ impl LlmProvider for OpenAiProvider {
             "temperature": request.temperature,
         });
 
-        let resp = self.client.post(&url)
+        let resp = self
+            .client
+            .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .json(&body)
             .send()
@@ -176,7 +188,9 @@ impl LlmProvider for OpenAiProvider {
         })
     }
 
-    fn name(&self) -> &str { "openai" }
+    fn name(&self) -> &str {
+        "openai"
+    }
 
     async fn is_available(&self) -> bool {
         !self.api_key.is_empty()

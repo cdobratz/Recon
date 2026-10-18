@@ -1,0 +1,23 @@
+---
+source: tests/corpus.rs
+expression: doc
+---
+{
+  "fingerprints": [
+    {
+      "count": 1,
+      "fingerprint": "3a48d582d25442a5b643db69104c693f2a5367f4bd0dd1f350614416a3869da9",
+      "path": "main.go",
+      "rule_id": "recon/function",
+      "snippet": "func main() {"
+    },
+    {
+      "count": 1,
+      "fingerprint": "6ab351e193910ce13fe216871478688c49fee99565c6ba764b19a3ec91a2572d",
+      "path": "main.go",
+      "rule_id": "recon/shell-execution",
+      "snippet": "exec.Command(\"az\").Run()"
+    }
+  ],
+  "version": 1
+}

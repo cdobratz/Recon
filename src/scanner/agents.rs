@@ -1,8 +1,9 @@
 use super::execution::{classify_execution, ExecutionClass};
 use super::rules;
 use super::Finding;
+use crate::parsers::{AstHitKind, ParsedFile};
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::LazyLock;
 
@@ -60,8 +61,17 @@ static PATTERNS: LazyLock<Vec<AgentPattern>> = LazyLock::new(|| {
     ]
 });
 
-/// Scan a file for agent configurations
-pub fn scan(path: &Path, source: &str, language: &str) -> Vec<Finding> {
+/// Scan a file for agent configurations.
+///
+/// Shell-versus-database classification uses the tree-sitter call target when
+/// the file parsed. Lines the query does not classify (imports, other
+/// languages) stay on the regex fallback.
+pub fn scan(
+    path: &Path,
+    source: &str,
+    language: &str,
+    parsed: Option<&ParsedFile>,
+) -> Vec<Finding> {
     let mut findings = Vec::new();
     let file_str = path.to_string_lossy().to_string();
 
@@ -84,26 +94,78 @@ pub fn scan(path: &Path, source: &str, language: &str) -> Vec<Finding> {
                 });
             }
         }
+    }
+
+    let mut classified = HashSet::new();
+    if let Some(parsed) = parsed.filter(|parsed| parsed.parsed) {
+        let mut shell_lines = HashSet::new();
+        for hit in parsed
+            .hits
+            .iter()
+            .filter(|hit| hit.kind == AstHitKind::ShellCall)
+        {
+            if shell_lines.insert(hit.line) {
+                findings.push(shell_finding(
+                    &file_str,
+                    language,
+                    hit.line,
+                    &hit.snippet,
+                    "ast",
+                ));
+                classified.insert(hit.line);
+            }
+        }
+        for hit in parsed
+            .hits
+            .iter()
+            .filter(|hit| hit.kind == AstHitKind::DatabaseCall)
+        {
+            classified.insert(hit.line);
+        }
+    }
+
+    for (line_num, line) in source.lines().enumerate() {
+        let line_no = line_num + 1;
+        if classified.contains(&line_no) {
+            continue;
+        }
         if classify_execution(line) == ExecutionClass::Shell {
-            let rule = rules::by_id(rules::SHELL_EXECUTION).expect("shell rule");
-            let mut metadata = HashMap::new();
-            metadata.insert("agent_type".into(), "Code Execution".into());
-            metadata.insert("rule_id".into(), rule.id.into());
-            metadata.insert("help".into(), rule.help.into());
-            metadata.insert("asi".into(), rule.asi.join(","));
-            findings.push(Finding {
-                category: "agent".into(),
-                severity: rule.severity.into(),
-                file: file_str.clone(),
-                line: line_num + 1,
-                title: rule.short_description.into(),
-                description: rule.help.into(),
-                snippet: line.trim().to_string(),
-                language: language.into(),
-                metadata,
-            });
+            findings.push(shell_finding(
+                &file_str,
+                language,
+                line_no,
+                line.trim(),
+                "regex",
+            ));
         }
     }
 
     findings
+}
+
+fn shell_finding(
+    file: &str,
+    language: &str,
+    line: usize,
+    snippet: &str,
+    detector: &str,
+) -> Finding {
+    let rule = rules::by_id(rules::SHELL_EXECUTION).expect("shell rule");
+    let mut metadata = HashMap::new();
+    metadata.insert("agent_type".into(), "Code Execution".into());
+    metadata.insert("rule_id".into(), rule.id.into());
+    metadata.insert("help".into(), rule.help.into());
+    metadata.insert("asi".into(), rule.asi.join(","));
+    metadata.insert("detector".into(), detector.into());
+    Finding {
+        category: "agent".into(),
+        severity: rule.severity.into(),
+        file: file.into(),
+        line,
+        title: rule.short_description.into(),
+        description: rule.help.into(),
+        snippet: snippet.into(),
+        language: language.into(),
+        metadata,
+    }
 }

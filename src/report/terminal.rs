@@ -1,5 +1,5 @@
+use crate::analysis::{AnalysisReport, AnalysisResults};
 use crate::scanner::ScanResults;
-use crate::analysis::{AnalysisResults, AnalysisReport};
 use colored::*;
 
 /// Print scan findings to terminal with color
@@ -8,14 +8,37 @@ pub fn print_scan(results: &ScanResults) {
     println!("Files scanned: {}", results.files_scanned);
     println!("Scan time: {}ms", results.scan_duration_ms);
     println!("Findings: {}", results.findings.len());
-    println!("Agent/MCP inventory: {} agent(s)\n", results.inventory.agents.len());
+    println!(
+        "Agent/MCP inventory: {} agent(s)\n",
+        results.inventory.agents.len()
+    );
 
     // Group by severity
-    let critical: Vec<_> = results.findings.iter().filter(|f| f.severity == "critical").collect();
-    let high: Vec<_> = results.findings.iter().filter(|f| f.severity == "high").collect();
-    let medium: Vec<_> = results.findings.iter().filter(|f| f.severity == "medium").collect();
-    let low: Vec<_> = results.findings.iter().filter(|f| f.severity == "low").collect();
-    let info: Vec<_> = results.findings.iter().filter(|f| f.severity == "info").collect();
+    let critical: Vec<_> = results
+        .findings
+        .iter()
+        .filter(|f| f.severity == "critical")
+        .collect();
+    let high: Vec<_> = results
+        .findings
+        .iter()
+        .filter(|f| f.severity == "high")
+        .collect();
+    let medium: Vec<_> = results
+        .findings
+        .iter()
+        .filter(|f| f.severity == "medium")
+        .collect();
+    let low: Vec<_> = results
+        .findings
+        .iter()
+        .filter(|f| f.severity == "low")
+        .collect();
+    let info: Vec<_> = results
+        .findings
+        .iter()
+        .filter(|f| f.severity == "info")
+        .collect();
 
     if !critical.is_empty() {
         println!("{} ({}):", "CRITICAL".red().bold(), critical.len());
@@ -104,7 +127,11 @@ fn print_report(report: &AnalysisReport) {
         _ => report.risk_score.to_string().red().bold(),
     };
 
-    println!("\n{} (Risk: {}/100)", report.category.to_uppercase().bold(), score_color);
+    println!(
+        "\n{} (Risk: {}/100)",
+        report.category.to_uppercase().bold(),
+        score_color
+    );
     println!("  {}", report.summary);
     println!("  {}", report.details.dimmed());
 

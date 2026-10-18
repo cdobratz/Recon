@@ -6,21 +6,32 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
     let mut risk_score: u32 = 0;
     let mut recommendations = Vec::new();
 
-    let agents = results.findings.iter().filter(|f| f.category == "agent").collect::<Vec<_>>();
-    let code_exec_agents = agents.iter()
+    let agents = results
+        .findings
+        .iter()
+        .filter(|f| f.category == "agent")
+        .collect::<Vec<_>>();
+    let code_exec_agents = agents
+        .iter()
         .filter(|f| f.metadata.get("agent_type").map(|t| t.as_str()) == Some("Code Execution"))
         .count();
-    let dangerous_perms = agents.iter()
+    let dangerous_perms = agents
+        .iter()
         .filter(|f| f.metadata.get("agent_type").map(|t| t.as_str()) == Some("Permissions"))
         .count();
-    let db_connections = results.findings.iter().filter(|f| f.category == "db_connection").count();
+    let db_connections = results
+        .findings
+        .iter()
+        .filter(|f| f.category == "db_connection")
+        .count();
 
     // Agents with code execution near DB connections = high risk
     if code_exec_agents > 0 && db_connections > 0 {
         risk_score += 35;
         recommendations.push(
             "Agents with code execution capability detected alongside database connections. \
-             Ensure agents cannot directly access production databases.".into()
+             Ensure agents cannot directly access production databases."
+                .into(),
         );
     }
 
@@ -42,7 +53,8 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
         if agents.is_empty() {
             recommendations.push("No AI agents detected in this repository.".into());
         } else {
-            recommendations.push("Agent configurations appear to follow security best practices.".into());
+            recommendations
+                .push("Agent configurations appear to follow security best practices.".into());
         }
     }
 

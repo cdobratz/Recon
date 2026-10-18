@@ -1,0 +1,2 @@
+*.gen.py
+!keep.gen.py

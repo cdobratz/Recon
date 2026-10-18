@@ -1,0 +1,26 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "api_endpoint",
+    "detector": "regex",
+    "file": "App.java",
+    "line": 2,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "@GetMapping(\"/items\")",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "function",
+    "detector": "regex",
+    "file": "App.java",
+    "line": 3,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "public String items(String id) {",
+    "title": "Function: items(1 params)"
+  }
+]

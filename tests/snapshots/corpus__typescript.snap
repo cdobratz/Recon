@@ -1,0 +1,106 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "agent",
+    "detector": "regex",
+    "file": "calls.ts",
+    "line": 1,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "const { execSync } = require(\"child_process\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.ts",
+    "line": 2,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "execSync(\"ls\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.ts",
+    "line": 3,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec(\"ls\");",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "component.tsx",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "export function Greet(name: string) {",
+    "title": "Function: Greet(1 params)"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "component.tsx",
+    "line": 5,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "app.get(\"/items\", () => null);",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.ts",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "app.get(\"/items\", handler);",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.ts",
+    "line": 2,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "router.delete(\"/items/:id\", handler);",
+    "title": "API endpoint: /items/:id"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.ts",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "function greet(name: string): string {",
+    "title": "Function: greet(1 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.ts",
+    "line": 5,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "export const arrow = (x: number, y: number): number => x + y;",
+    "title": "Function: arrow(2 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.ts",
+    "line": 8,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "save(row: string): string {",
+    "title": "Function: save(1 params)"
+  }
+]

@@ -1,0 +1,136 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "agent",
+    "detector": "regex",
+    "file": "calls.py",
+    "line": 1,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "import subprocess",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "calls.py",
+    "line": 5,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "def run_tool():",
+    "title": "Function: run_tool(0 params)"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.py",
+    "line": 6,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "subprocess.run([\"ls\"])",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.py",
+    "line": 7,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "os.system(\"ls\")",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "calls.py",
+    "line": 10,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "def query(db):",
+    "title": "Function: query(1 params)"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.py",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "@app.get(\"/items\")",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "endpoints.py",
+    "line": 2,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "def list_items():",
+    "title": "Function: list_items(0 params)"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.py",
+    "line": 6,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "@router.post(\"/items\")",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "endpoints.py",
+    "line": 7,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "def create_item():",
+    "title": "Function: create_item(0 params)"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.py",
+    "line": 12,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "path(\"/admin\", admin),",
+    "title": "API endpoint: /admin"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.py",
+    "line": 1,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "def greet(name, title):",
+    "title": "Function: greet(2 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.py",
+    "line": 6,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "def save(self, row):",
+    "title": "Function: save(2 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.py",
+    "line": 10,
+    "rule_id": "",
+    "severity": "medium",
+    "snippet": "async def load(a, b, c, d, e, f, g):",
+    "title": "Function: load(7 params)"
+  }
+]

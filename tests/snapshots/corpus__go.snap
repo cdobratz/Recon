@@ -1,0 +1,86 @@
+---
+source: tests/corpus.rs
+expression: findings
+---
+[
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "calls.go",
+    "line": 8,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func Run(ctx context.Context, db *DB, tx *Tx) {",
+    "title": "Function: Run(3 params)"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.go",
+    "line": 9,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec.Command(\"az\", \"account\", \"show\").Run()",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "agent",
+    "detector": "ast",
+    "file": "calls.go",
+    "line": 10,
+    "rule_id": "recon/shell-execution",
+    "severity": "high",
+    "snippet": "exec.CommandContext(ctx, \"aws\", \"configure\", \"export-credentials\").Run()",
+    "title": "Shell or code execution call"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "endpoints.go",
+    "line": 5,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func routes() {",
+    "title": "Function: routes(0 params)"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.go",
+    "line": 6,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "http.HandleFunc(\"/items\", listItems)",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "api_endpoint",
+    "detector": "ast",
+    "file": "endpoints.go",
+    "line": 7,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "router.GET(\"/items\", createItem)",
+    "title": "API endpoint: /items"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.go",
+    "line": 3,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func Greet(name string) string {",
+    "title": "Function: Greet(1 params)"
+  },
+  {
+    "category": "function",
+    "detector": "ast",
+    "file": "functions.go",
+    "line": 7,
+    "rule_id": "",
+    "severity": "info",
+    "snippet": "func (s *Store) Save(row string) error {",
+    "title": "Function: Save(1 params)"
+  }
+]

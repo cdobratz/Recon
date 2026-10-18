@@ -1,3 +1,4 @@
+pub mod cyclonedx;
 pub mod json;
 pub mod sarif;
 pub mod terminal;
@@ -12,6 +13,7 @@ pub fn output(results: &ScanResults, format: &str, output_path: Option<&str>) ->
         "json" => json::format_scan(results)?,
         "sarif" => sarif::format_scan(results)?,
         "mermaid" => results.inventory_mermaid.clone(),
+        "cyclonedx" => cyclonedx::format_scan(results)?,
         _ => {
             terminal::print_scan(results);
             return Ok(());

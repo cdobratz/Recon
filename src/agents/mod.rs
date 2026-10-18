@@ -1,8 +1,8 @@
 pub mod agent;
 
 use crate::config::ReconConfig;
-use anyhow::Result;
 use agent::AgentConfig;
+use anyhow::Result;
 use std::path::Path;
 
 /// Add an agent from a config file
@@ -40,7 +40,10 @@ pub fn list_agents(_config: &ReconConfig) -> Result<()> {
         if path.extension().and_then(|e| e.to_str()) == Some("toml") {
             if let Ok(contents) = std::fs::read_to_string(&path) {
                 if let Ok(agent) = toml::from_str::<AgentConfig>(&contents) {
-                    println!("  {} - {} [{}]", agent.name, agent.description, agent.agent_type);
+                    println!(
+                        "  {} - {} [{}]",
+                        agent.name, agent.description, agent.agent_type
+                    );
                     count += 1;
                 }
             }
@@ -59,7 +62,10 @@ pub fn list_agents(_config: &ReconConfig) -> Result<()> {
 pub async fn run_agent(name: &str, target: &str, config: &ReconConfig) -> Result<()> {
     let agent_file = Path::new("agents").join(format!("{}.toml", name));
     if !agent_file.exists() {
-        anyhow::bail!("Agent not found: {}. Run 'recon agent list' to see available agents.", name);
+        anyhow::bail!(
+            "Agent not found: {}. Run 'recon agent list' to see available agents.",
+            name
+        );
     }
 
     let contents = std::fs::read_to_string(&agent_file)?;
@@ -68,8 +74,10 @@ pub async fn run_agent(name: &str, target: &str, config: &ReconConfig) -> Result
     println!("Running agent '{}' against target: {}", agent.name, target);
 
     // Phase 4: Full agent workflow (scan -> analyze -> report)
-    let findings = crate::scanner::run_scan(target, config, None, None).await?;
-    let results = crate::analysis::run_analysis(&findings, &config.llm.provider, None, None, config).await?;
+    let findings =
+        crate::scanner::run_scan(target, config, crate::scanner::ScanOptions::default()).await?;
+    let results =
+        crate::analysis::run_analysis(&findings, &config.llm.provider, None, None, config).await?;
     crate::report::output_analysis(&results, "terminal", None)?;
 
     Ok(())
