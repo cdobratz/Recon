@@ -1,15 +1,22 @@
 //! Recon as an MCP server.
 //!
-//! stdio is the supported transport. The tools call the static scanner.
+//! stdio and streamable HTTP both call the static scanner. `recon scan` does
+//! not start either server.
 
 use super::tools;
 use crate::config::ReconConfig;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use rmcp::handler::server::wrapper::Parameters;
+use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
+use rmcp::transport::streamable_http_server::{StreamableHttpServerConfig, StreamableHttpService};
 use rmcp::{tool, tool_handler, tool_router, ServerHandler, ServiceExt};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde_json::json;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use tokio::net::TcpListener;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
 pub struct ReconMcp {
@@ -106,9 +113,111 @@ pub async fn serve_stdio(config: &ReconConfig) -> Result<()> {
     Ok(())
 }
 
-/// HTTP transport is not part of this server.
-pub async fn serve_http(_port: u16, _config: &ReconConfig) -> Result<()> {
-    anyhow::bail!(
-        "HTTP MCP transport is not implemented. Use `recon mcp serve --transport stdio`."
+/// Serve MCP at `http://0.0.0.0:<port>/mcp` until Ctrl-C.
+pub async fn serve_http(port: u16, config: &ReconConfig) -> Result<()> {
+    let listener = TcpListener::bind(("0.0.0.0", port))
+        .await
+        .with_context(|| format!("bind 0.0.0.0:{port}"))?;
+    let ct = CancellationToken::new();
+    let shutdown = ct.clone();
+    tokio::spawn(async move {
+        let _ = tokio::signal::ctrl_c().await;
+        shutdown.cancel();
+    });
+    serve_on(listener, config, ct).await?;
+    Ok(())
+}
+
+/// Serve an already-bound listener until `shutdown` is cancelled.
+pub async fn serve_on(
+    listener: TcpListener,
+    config: &ReconConfig,
+    shutdown: CancellationToken,
+) -> Result<SocketAddr> {
+    let addr = listener
+        .local_addr()
+        .context("read MCP HTTP listen address")?;
+    eprintln!("recon mcp server (http) http://{addr}/mcp");
+    let recon = config.clone();
+    let http_config = StreamableHttpServerConfig::default()
+        .with_cancellation_token(shutdown.clone())
+        .with_allowed_hosts(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
+    let service = StreamableHttpService::new(
+        move || {
+            Ok(ReconMcp {
+                config: recon.clone(),
+            })
+        },
+        Arc::new(LocalSessionManager::default()),
+        http_config,
     );
+    let router = axum::Router::new().nest_service("/mcp", service);
+    axum::serve(listener, router)
+        .with_graceful_shutdown(async move { shutdown.cancelled().await })
+        .await
+        .context("mcp http server")?;
+    Ok(addr)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rmcp::model::CallToolRequestParams;
+    use rmcp::transport::StreamableHttpClientTransport;
+    use rmcp::ServiceExt;
+
+    #[tokio::test]
+    async fn http_server_lists_and_explains_a_rule() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let shutdown = CancellationToken::new();
+        let config = ReconConfig::default();
+        let server_shutdown = shutdown.clone();
+        let server = tokio::spawn(async move {
+            serve_on(listener, &config, server_shutdown).await.unwrap();
+        });
+
+        let url = format!("http://{addr}/mcp");
+        let client = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            loop {
+                match ().serve(StreamableHttpClientTransport::from_uri(url.clone())).await {
+                    Ok(client) => return client,
+                    Err(_) => tokio::time::sleep(std::time::Duration::from_millis(20)).await,
+                }
+            }
+        })
+        .await
+        .expect("http mcp server accepts a client");
+
+        let tools = client.list_all_tools().await.unwrap();
+        let names: Vec<_> = tools.iter().map(|tool| tool.name.to_string()).collect();
+        for expected in [
+            "scan_repo",
+            "list_findings",
+            "explain_finding",
+            "agent_inventory",
+        ] {
+            assert!(names.iter().any(|name| name == expected), "{names:?}");
+        }
+
+        let arguments = serde_json::json!({"rule_id": "recon/shell-execution"});
+        let result = client
+            .call_tool(
+                CallToolRequestParams::new("explain_finding")
+                    .with_arguments(arguments.as_object().unwrap().clone()),
+            )
+            .await
+            .unwrap();
+        assert_ne!(result.is_error, Some(true), "{result:?}");
+        let text: String = result
+            .content
+            .iter()
+            .filter_map(|block| block.as_text().map(|text| text.text.as_str()))
+            .collect();
+        assert!(text.contains("db.Exec"), "{text}");
+
+        drop(client);
+        shutdown.cancel();
+        server.await.unwrap();
+    }
 }
