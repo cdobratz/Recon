@@ -1,6 +1,4 @@
-#![allow(dead_code)]
-
-/// Prompt templates for AI-powered analysis
+/// Prompt templates for opt-in LLM analysis.
 pub fn security_analysis_prompt(context: &str) -> String {
     format!(
         "You are a security auditor. Analyze the following code findings for OWASP Top 10 \

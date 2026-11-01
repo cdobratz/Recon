@@ -22,4 +22,7 @@ pub struct AgentConfig {
     /// MCP servers this agent can invoke
     #[serde(default)]
     pub mcp_servers: Vec<String>,
+    /// When true, `recon agent run` sends findings and snippets to the LLM.
+    #[serde(default)]
+    pub use_llm: bool,
 }

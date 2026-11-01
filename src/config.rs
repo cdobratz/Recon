@@ -53,6 +53,16 @@ pub struct LlmConfig {
     /// Temperature for LLM responses
     #[serde(default = "default_temperature")]
     pub temperature: f32,
+    /// Hard cap on the estimated spend of one LLM run, in USD.
+    /// The local ollama provider is priced at zero.
+    #[serde(default = "default_max_cost")]
+    pub max_cost_usd: f64,
+    /// Findings sent in one LLM request.
+    #[serde(default = "default_max_findings")]
+    pub max_findings: usize,
+    /// Characters kept from each finding snippet.
+    #[serde(default = "default_snippet_chars")]
+    pub max_snippet_chars: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,6 +145,18 @@ fn default_temperature() -> f32 {
     0.3
 }
 
+fn default_max_cost() -> f64 {
+    0.25
+}
+
+fn default_max_findings() -> usize {
+    40
+}
+
+fn default_snippet_chars() -> usize {
+    240
+}
+
 fn default_transport() -> String {
     "stdio".into()
 }
@@ -176,6 +198,9 @@ impl Default for LlmConfig {
             base_url: None,
             max_tokens: default_max_tokens(),
             temperature: default_temperature(),
+            max_cost_usd: default_max_cost(),
+            max_findings: default_max_findings(),
+            max_snippet_chars: default_snippet_chars(),
         }
     }
 }
@@ -251,6 +276,21 @@ pub fn set_value(key: &str, value: &str) -> Result<()> {
         "llm.model" => config.llm.model = Some(value.to_string()),
         "llm.api_key" => config.llm.api_key = Some(value.to_string()),
         "llm.base_url" => config.llm.base_url = Some(value.to_string()),
+        "llm.max_cost_usd" => {
+            config.llm.max_cost_usd = value
+                .parse()
+                .with_context(|| format!("llm.max_cost_usd is not a number: {value}"))?;
+        }
+        "llm.max_findings" => {
+            config.llm.max_findings = value
+                .parse()
+                .with_context(|| format!("llm.max_findings is not an integer: {value}"))?;
+        }
+        "llm.max_snippet_chars" => {
+            config.llm.max_snippet_chars = value
+                .parse()
+                .with_context(|| format!("llm.max_snippet_chars is not an integer: {value}"))?;
+        }
         "report.default_format" => config.report.default_format = value.to_string(),
         "report.min_severity" => config.report.min_severity = value.to_string(),
         _ => anyhow::bail!("Unknown config key: {}", key),
@@ -273,6 +313,9 @@ pub fn get_value(key: &str) -> Result<()> {
         "llm.provider" => config.llm.provider,
         "llm.model" => config.llm.model.unwrap_or_default(),
         "llm.base_url" => config.llm.base_url.unwrap_or_default(),
+        "llm.max_cost_usd" => config.llm.max_cost_usd.to_string(),
+        "llm.max_findings" => config.llm.max_findings.to_string(),
+        "llm.max_snippet_chars" => config.llm.max_snippet_chars.to_string(),
         "report.default_format" => config.report.default_format,
         "report.min_severity" => config.report.min_severity,
         _ => anyhow::bail!("Unknown config key: {}", key),
