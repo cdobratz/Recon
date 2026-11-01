@@ -21,9 +21,11 @@ Recon does not start MCP servers to read their tool lists. Config files are pars
 | Inline `recon:ignore` suppressions and a baseline file | Implemented |
 | CycloneDX 1.6 AI-BOM export (`--format cyclonedx`) | Implemented |
 | GitHub Actions CI (`cargo fmt --check`, build, test, clippy) | Implemented |
-| LLM-backed analysis (`--provider ollama` and hosted models) | Planned |
-| MCP client and server (`recon mcp serve` / `connect`) | Planned |
-| Skills and autonomous agent workflows | Planned |
+| Opt-in LLM analysis (`recon analyze --llm`, local Ollama by default, hosted OpenAI and Anthropic) | Implemented |
+| MCP server (`recon mcp serve`, stdio) with `scan_repo`, `list_findings`, `explain_finding`, `agent_inventory` | Implemented |
+| MCP client (`recon mcp connect "<command>"`) | Implemented |
+| Skills (`recon skill run`) and agent workflows (`recon agent run`) | Implemented |
+| HTTP MCP transport | Planned |
 
 ## Static scan guarantee
 
@@ -32,7 +34,11 @@ Recon does not start MCP servers to read their tool lists. Config files are pars
 - spawn `npx`, `uvx`, shells, or any other process
 - connect to MCP server URLs, package registries, or LLM APIs
 
-The check is `tests/static_scan.rs`. It runs the `scan` command under `strace` and fails if the process calls `execve` (other than the scanner itself) or a network syscall. `recon analyze` is still local and rule-based today; a future LLM mode would be opt-in and is not part of `scan`.
+The check is `tests/static_scan.rs`. It runs `scan` and `analyze` (without `--llm`) under `strace` and fails if the process calls `execve` (other than the scanner itself) or a network syscall.
+
+`recon analyze --llm` is opt-in. It sends findings and short snippets to the model, never whole files, and stops when the estimated cost would pass `llm.max_cost_usd` (0.25 by default). The default provider is local Ollama (`llama3.2` at `http://localhost:11434`, or `OLLAMA_HOST`). `--provider openai` uses `OPENAI_API_KEY` and `--provider anthropic` uses `ANTHROPIC_API_KEY`. Ollama is priced at zero, so it always fits the cap.
+
+`recon mcp serve` speaks MCP over stdio and calls the same static scanner. `recon mcp connect "<command>"` spawns that command to list its tools. Neither command is used by `scan`. HTTP MCP is not implemented.
 
 ```bash
 recon scan <path>
@@ -43,6 +49,11 @@ recon scan <path> --format cyclonedx
 recon scan <path> --write-baseline recon-baseline.json
 recon scan <path> --baseline recon-baseline.json
 recon report <path> --format sarif
+recon analyze <path>
+recon analyze <path> --llm
+recon analyze <path> --llm --provider openai --max-cost 0.25
+recon mcp serve
+recon mcp connect "recon mcp serve"
 ```
 
 JSON output includes `inventory` (agent → MCP server/tool → data store → credential) and `inventory_mermaid`. `--format mermaid` prints only the diagram. `--format cyclonedx` prints a CycloneDX 1.6 JSON document of that inventory (agents, MCP servers, tools, data stores, credentials).
@@ -88,10 +99,10 @@ recon/
 │   ├── main.rs
 │   ├── config.rs
 │   ├── scanner/          # in-process scanners, MCP inventory, rules
-│   ├── analysis/         # rule-based scores (LLM planned)
+│   ├── analysis/         # rule-based scores; optional LLM pass
 │   ├── parsers/          # tree-sitter parsers; regex fallback for other languages
-│   ├── llm/              # provider stubs (not called by scan)
-│   ├── mcp/              # serve/connect stubs
+│   ├── llm/              # Ollama, OpenAI, and Anthropic (only with --llm)
+│   ├── mcp/              # stdio MCP server and client
 │   ├── skills/
 │   ├── agents/
 │   └── report/           # terminal, JSON, SARIF, Mermaid
@@ -110,11 +121,15 @@ recon scan <path> --write-baseline recon-baseline.json
 recon scan <path> --baseline recon-baseline.json
 recon scan <path> --only agents,mcp
 recon analyze <path>
+recon analyze <path> --llm
 recon report <path> --format sarif
-recon skill list
-recon agent list
+recon skill add ./todo.toml
+recon skill run todo --target <path>
+recon agent run reviewer --target <path>
+recon agent run reviewer --target <path> --llm
 recon mcp serve
+recon mcp connect "recon mcp serve"
 recon config show
 ```
 
-`analyze` currently scores the static findings. It does not call an LLM. `mcp serve` and `mcp connect` print that they are not implemented yet.
+`analyze` scores the static findings. Add `--llm` to also ask a model about those findings. A skill is a TOML file of regex search patterns; `skill run` and `agent run` apply them while reading files. An agent runs the static scan, then its skills, then the rule scores. `--llm` or `use_llm = true` in the agent file is what turns the model on.

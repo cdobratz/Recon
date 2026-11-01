@@ -1,8 +1,26 @@
-#![allow(dead_code)]
-
 use super::{LlmProvider, LlmRequest, LlmResponse, LlmUsage};
 use anyhow::Result;
 use async_trait::async_trait;
+
+fn http_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(60))
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new())
+}
+
+async fn read_json(resp: reqwest::Response, provider: &str) -> Result<serde_json::Value> {
+    let status = resp.status();
+    let json: serde_json::Value = resp.json().await?;
+    if !status.is_success() {
+        let message = json["error"]["message"]
+            .as_str()
+            .or_else(|| json["error"].as_str())
+            .unwrap_or("request failed");
+        anyhow::bail!("{provider} request failed ({status}): {message}");
+    }
+    Ok(json)
+}
 
 /// Ollama provider (local, OpenAI-compatible API)
 pub struct OllamaProvider {
@@ -14,7 +32,7 @@ impl OllamaProvider {
     pub fn new(base_url: Option<&str>) -> Self {
         Self {
             base_url: base_url.unwrap_or("http://localhost:11434").to_string(),
-            client: reqwest::Client::new(),
+            client: http_client(),
         }
     }
 }
@@ -31,26 +49,22 @@ impl LlmProvider for OllamaProvider {
         });
 
         let resp = self.client.post(&url).json(&body).send().await?;
-        let json: serde_json::Value = resp.json().await?;
+        let json = read_json(resp, "ollama").await?;
 
         let content = json["choices"][0]["message"]["content"]
             .as_str()
             .unwrap_or("")
             .to_string();
+        let usage = json.get("usage").map(|usage| LlmUsage {
+            prompt_tokens: usage["prompt_tokens"].as_u64().unwrap_or(0) as u32,
+            completion_tokens: usage["completion_tokens"].as_u64().unwrap_or(0) as u32,
+        });
 
         Ok(LlmResponse {
             content,
             model: request.model.clone(),
-            usage: None,
+            usage,
         })
-    }
-
-    fn name(&self) -> &str {
-        "ollama"
-    }
-
-    async fn is_available(&self) -> bool {
-        self.client.get(&self.base_url).send().await.is_ok()
     }
 }
 
@@ -66,7 +80,7 @@ impl AnthropicProvider {
         Self {
             api_key: api_key.to_string(),
             base_url: base_url.unwrap_or("https://api.anthropic.com").to_string(),
-            client: reqwest::Client::new(),
+            client: http_client(),
         }
     }
 }
@@ -111,7 +125,7 @@ impl LlmProvider for AnthropicProvider {
             .send()
             .await?;
 
-        let json: serde_json::Value = resp.json().await?;
+        let json = read_json(resp, "anthropic").await?;
         let content = json["content"][0]["text"]
             .as_str()
             .unwrap_or("")
@@ -125,14 +139,6 @@ impl LlmProvider for AnthropicProvider {
                 completion_tokens: json["usage"]["output_tokens"].as_u64().unwrap_or(0) as u32,
             }),
         })
-    }
-
-    fn name(&self) -> &str {
-        "anthropic"
-    }
-
-    async fn is_available(&self) -> bool {
-        !self.api_key.is_empty()
     }
 }
 
@@ -148,7 +154,7 @@ impl OpenAiProvider {
         Self {
             api_key: api_key.to_string(),
             base_url: base_url.unwrap_or("https://api.openai.com").to_string(),
-            client: reqwest::Client::new(),
+            client: http_client(),
         }
     }
 }
@@ -172,7 +178,7 @@ impl LlmProvider for OpenAiProvider {
             .send()
             .await?;
 
-        let json: serde_json::Value = resp.json().await?;
+        let json = read_json(resp, "openai").await?;
         let content = json["choices"][0]["message"]["content"]
             .as_str()
             .unwrap_or("")
@@ -186,13 +192,5 @@ impl LlmProvider for OpenAiProvider {
                 completion_tokens: json["usage"]["completion_tokens"].as_u64().unwrap_or(0) as u32,
             }),
         })
-    }
-
-    fn name(&self) -> &str {
-        "openai"
-    }
-
-    async fn is_available(&self) -> bool {
-        !self.api_key.is_empty()
     }
 }

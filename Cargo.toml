@@ -71,6 +71,10 @@ futures = "0.3"
 # Stable finding fingerprints for baseline files
 sha2 = "0.10"
 
+# MCP server and stdio client. Scan does not start this.
+rmcp = { version = "3.8.0", features = ["server", "transport-io", "client", "transport-child-process"] }
+schemars = "1"
+
 [dev-dependencies]
 insta = { version = "=1.40.0", features = ["json"] }
 tempfile = "3"

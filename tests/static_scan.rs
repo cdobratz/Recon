@@ -1,9 +1,19 @@
-//! `recon scan` must not spawn processes or open network connections.
+//! `recon scan` and `recon analyze` (without `--llm`) must not spawn processes
+//! or open network connections.
 
 use std::process::Command;
 
 #[test]
 fn scan_does_not_spawn_or_connect() {
+    assert_static(&["scan", "{path}", "--format", "json"]);
+}
+
+#[test]
+fn analyze_without_llm_does_not_spawn_or_connect() {
+    assert_static(&["analyze", "{path}"]);
+}
+
+fn assert_static(args: &[&str]) {
     let bin = env!("CARGO_BIN_EXE_recon");
     let dir = tempfile::tempdir().expect("tempdir");
     std::fs::write(
@@ -19,21 +29,24 @@ fn scan_does_not_spawn_or_connect() {
     .unwrap();
 
     let trace = dir.path().join("trace.txt");
-    let output = Command::new("strace")
-        .args([
-            "-f",
-            "-e",
-            "trace=execve,execveat,connect,sendto,sendmsg,sendmmsg",
-            "-s",
-            "200",
-            "-o",
-        ])
-        .arg(&trace)
-        .arg(bin)
-        .arg("scan")
-        .arg(dir.path())
-        .arg("--format")
-        .arg("json")
+    let mut command = Command::new("strace");
+    command.args([
+        "-f",
+        "-e",
+        "trace=execve,execveat,connect,sendto,sendmsg,sendmmsg",
+        "-s",
+        "200",
+        "-o",
+    ]);
+    command.arg(&trace).arg(bin);
+    for arg in args {
+        if *arg == "{path}" {
+            command.arg(dir.path());
+        } else {
+            command.arg(arg);
+        }
+    }
+    let output = command
         .output()
         .unwrap_or_else(|err| panic!("strace is required for the static-scan check: {err}"));
     assert!(

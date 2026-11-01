@@ -62,13 +62,21 @@ enum Commands {
         /// Path to the repository to analyze
         path: String,
 
-        /// LLM provider to use
-        #[arg(long, default_value = "ollama")]
-        provider: String,
+        /// Call the configured LLM. Off by default. Sends findings and snippets only.
+        #[arg(long)]
+        llm: bool,
+
+        /// LLM provider. Defaults to the config value, which is ollama.
+        #[arg(long)]
+        provider: Option<String>,
 
         /// Model name
         #[arg(long)]
         model: Option<String>,
+
+        /// Maximum estimated spend in USD for this run. Ollama stays at zero.
+        #[arg(long)]
+        max_cost: Option<f64>,
 
         /// Analysis categories
         #[arg(long, value_delimiter = ',')]
@@ -122,6 +130,14 @@ enum SkillAction {
     List,
     /// Remove a skill by name
     Remove { name: String },
+    /// Run a skill's search patterns against a repository. Static only.
+    Run {
+        /// Skill name
+        name: String,
+        /// Repository to read
+        #[arg(long)]
+        target: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -137,6 +153,9 @@ enum AgentAction {
         /// Target repository path
         #[arg(long)]
         target: String,
+        /// Send findings and snippets to the agent's LLM provider.
+        #[arg(long)]
+        llm: bool,
     },
 }
 
@@ -151,10 +170,10 @@ enum McpAction {
         #[arg(long, default_value = "3000")]
         port: u16,
     },
-    /// Connect to an external MCP server
+    /// Connect to a stdio MCP server command and list its tools
     Connect {
-        /// MCP server URI
-        uri: String,
+        /// Command line to spawn, for example `recon mcp serve`
+        command: String,
     },
 }
 
@@ -228,18 +247,25 @@ async fn main() -> Result<()> {
         }
         Commands::Analyze {
             path,
+            llm,
             provider,
             model,
+            max_cost,
             categories,
         } => {
             tracing::info!("Analyzing repository: {}", path);
             let findings = scanner::run_scan(&path, &cfg, scanner::ScanOptions::default()).await?;
+            let provider = provider.as_deref().unwrap_or(cfg.llm.provider.as_str());
             let results = analysis::run_analysis(
                 &findings,
-                &provider,
-                model.as_deref(),
-                categories.as_deref(),
                 &cfg,
+                analysis::AnalysisRequest {
+                    provider,
+                    model: model.as_deref().or(cfg.llm.model.as_deref()),
+                    categories: categories.as_deref(),
+                    use_llm: llm,
+                    max_cost_usd: max_cost,
+                },
             )
             .await?;
             report::output_analysis(&results, "terminal", None)?;
@@ -257,20 +283,23 @@ async fn main() -> Result<()> {
             SkillAction::Add { path } => skills::add_skill(&path, &cfg)?,
             SkillAction::List => skills::list_skills(&cfg)?,
             SkillAction::Remove { name } => skills::remove_skill(&name, &cfg)?,
+            SkillAction::Run { name, target } => {
+                skills::run_skill(&name, &target, &cfg)?;
+            }
         },
         Commands::Agent { action } => match action {
             AgentAction::Add { config: agent_cfg } => agents::add_agent(&agent_cfg, &cfg)?,
             AgentAction::List => agents::list_agents(&cfg)?,
-            AgentAction::Run { name, target } => {
-                agents::run_agent(&name, &target, &cfg).await?;
+            AgentAction::Run { name, target, llm } => {
+                agents::run_agent(&name, &target, &cfg, llm).await?;
             }
         },
         Commands::Mcp { action } => match action {
             McpAction::Serve { transport, port } => {
                 mcp::serve(&transport, port, &cfg).await?;
             }
-            McpAction::Connect { uri } => {
-                mcp::connect(&uri, &cfg).await?;
+            McpAction::Connect { command } => {
+                mcp::connect(&command, &cfg).await?;
             }
         },
         Commands::Config { action } => match action {

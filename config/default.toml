@@ -18,6 +18,9 @@ categories = ["api_endpoints", "functions", "db_connections", "agents", "mcp", "
 provider = "ollama"
 max_tokens = 4096
 temperature = 0.3
+max_cost_usd = 0.25
+max_findings = 40
+max_snippet_chars = 240
 
 [mcp]
 servers = []

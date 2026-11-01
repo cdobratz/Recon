@@ -65,14 +65,17 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
         _ => "Critical agent-data risk",
     };
 
-    AnalysisReport {
-        category: "agent_data".into(),
-        summary: summary.into(),
-        risk_score: risk_score.min(100) as u8,
+    AnalysisReport::new(
+        "agent_data",
+        summary,
+        risk_score.min(100) as u8,
         recommendations,
-        details: format!(
+        format!(
             "Found {} agents ({} with code execution, {} with dangerous permissions) and {} DB connections.",
-            agents.len(), code_exec_agents, dangerous_perms, db_connections
+            agents.len(),
+            code_exec_agents,
+            dangerous_perms,
+            db_connections
         ),
-    }
+    )
 }

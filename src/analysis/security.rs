@@ -68,14 +68,14 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
         _ => "Critical security risk",
     };
 
-    AnalysisReport {
-        category: "security".into(),
-        summary: summary.into(),
-        risk_score: risk_score.min(100) as u8,
+    AnalysisReport::new(
+        "security",
+        summary,
+        risk_score.min(100) as u8,
         recommendations,
-        details: format!(
+        format!(
             "Scanned {} files. Found {} secrets, {} DB credential issues, {} dangerous agents.",
             results.files_scanned, secrets, db_cred_issues, dangerous_agents
         ),
-    }
+    )
 }

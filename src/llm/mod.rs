@@ -1,5 +1,5 @@
-#![allow(dead_code, clippy::double_must_use)]
-
+pub mod budget;
+pub mod payload;
 pub mod prompts;
 pub mod providers;
 
@@ -37,16 +37,11 @@ pub struct LlmUsage {
 }
 
 /// Trait for LLM provider implementations
+#[allow(clippy::double_must_use)]
 #[async_trait]
 pub trait LlmProvider: Send + Sync {
     /// Send a chat completion request
     async fn chat(&self, request: &LlmRequest) -> Result<LlmResponse>;
-
-    /// Get the provider name
-    fn name(&self) -> &str;
-
-    /// Check if the provider is available/configured
-    async fn is_available(&self) -> bool;
 }
 
 /// Create an LLM provider from config

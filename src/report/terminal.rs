@@ -133,6 +133,9 @@ fn print_report(report: &AnalysisReport) {
         score_color
     );
     println!("  {}", report.summary);
+    if let Some(llm_summary) = &report.llm_summary {
+        println!("  LLM: {llm_summary}");
+    }
     println!("  {}", report.details.dimmed());
 
     if !report.recommendations.is_empty() {

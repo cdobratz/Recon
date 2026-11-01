@@ -50,14 +50,14 @@ pub fn analyze(results: &ScanResults) -> AnalysisReport {
         _ => "Significant API efficiency problems",
     };
 
-    AnalysisReport {
-        category: "api_efficiency".into(),
-        summary: summary.into(),
-        risk_score: risk_score.min(100) as u8,
+    AnalysisReport::new(
+        "api_efficiency",
+        summary,
+        risk_score.min(100) as u8,
         recommendations,
-        details: format!(
+        format!(
             "Found {} endpoints and {} functions across {} files.",
             endpoints, functions, results.files_scanned
         ),
-    }
+    )
 }
