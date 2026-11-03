@@ -71,9 +71,22 @@ futures = "0.3"
 # Stable finding fingerprints for baseline files
 sha2 = "0.10"
 
-# MCP server and stdio client. Scan does not start this.
-rmcp = { version = "3.8.0", features = ["server", "transport-io", "client", "transport-child-process"] }
+# MCP server and client. Scan does not start this.
+# `reqwest` here is rmcp's rustls feature, not native-tls.
+rmcp = { version = "3.8.0", features = [
+    "server",
+    "transport-io",
+    "client",
+    "transport-child-process",
+    "transport-streamable-http-server",
+    "transport-streamable-http-client-reqwest",
+    "reqwest",
+] }
 schemars = "1"
+
+# Streamable HTTP MCP server. Binds 0.0.0.0:$PORT when `mcp serve --transport http` runs.
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio"] }
+tokio-util = "0.7"
 
 [dev-dependencies]
 insta = { version = "=1.40.0", features = ["json"] }

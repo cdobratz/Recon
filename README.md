@@ -22,10 +22,9 @@ Recon does not start MCP servers to read their tool lists. Config files are pars
 | CycloneDX 1.6 AI-BOM export (`--format cyclonedx`) | Implemented |
 | GitHub Actions CI (`cargo fmt --check`, build, test, clippy) | Implemented |
 | Opt-in LLM analysis (`recon analyze --llm`, local Ollama by default, hosted OpenAI and Anthropic) | Implemented |
-| MCP server (`recon mcp serve`, stdio) with `scan_repo`, `list_findings`, `explain_finding`, `agent_inventory` | Implemented |
-| MCP client (`recon mcp connect "<command>"`) | Implemented |
+| MCP server (`recon mcp serve`, stdio and streamable HTTP) with `scan_repo`, `list_findings`, `explain_finding`, `agent_inventory` | Implemented |
+| MCP client (`recon mcp connect` for a stdio command or an http(s) URL) | Implemented |
 | Skills (`recon skill run`) and agent workflows (`recon agent run`) | Implemented |
-| HTTP MCP transport | Planned |
 
 ## Static scan guarantee
 
@@ -38,7 +37,7 @@ The check is `tests/static_scan.rs`. It runs `scan` and `analyze` (without `--ll
 
 `recon analyze --llm` is opt-in. It sends findings and short snippets to the model, never whole files, and stops when the estimated cost would pass `llm.max_cost_usd` (0.25 by default). The default provider is local Ollama (`llama3.2` at `http://localhost:11434`, or `OLLAMA_HOST`). `--provider openai` uses `OPENAI_API_KEY` and `--provider anthropic` uses `ANTHROPIC_API_KEY`. Ollama is priced at zero, so it always fits the cap.
 
-`recon mcp serve` speaks MCP over stdio and calls the same static scanner. `recon mcp connect "<command>"` spawns that command to list its tools. Neither command is used by `scan`. HTTP MCP is not implemented.
+`recon mcp serve` speaks MCP over stdio. `recon mcp serve --transport http --port 3000` listens on `0.0.0.0:3000` and serves the same tools at `/mcp` (streamable HTTP). `recon mcp connect` either spawns a stdio command or opens an `http://` / `https://` endpoint. Neither path is used by `scan`.
 
 ```bash
 recon scan <path>
@@ -53,7 +52,9 @@ recon analyze <path>
 recon analyze <path> --llm
 recon analyze <path> --llm --provider openai --max-cost 0.25
 recon mcp serve
+recon mcp serve --transport http --port 3000
 recon mcp connect "recon mcp serve"
+recon mcp connect http://127.0.0.1:3000/mcp
 ```
 
 JSON output includes `inventory` (agent → MCP server/tool → data store → credential) and `inventory_mermaid`. `--format mermaid` prints only the diagram. `--format cyclonedx` prints a CycloneDX 1.6 JSON document of that inventory (agents, MCP servers, tools, data stores, credentials).
@@ -102,7 +103,7 @@ recon/
 │   ├── analysis/         # rule-based scores; optional LLM pass
 │   ├── parsers/          # tree-sitter parsers; regex fallback for other languages
 │   ├── llm/              # Ollama, OpenAI, and Anthropic (only with --llm)
-│   ├── mcp/              # stdio MCP server and client
+│   ├── mcp/              # stdio and streamable HTTP MCP server and client
 │   ├── skills/
 │   ├── agents/
 │   └── report/           # terminal, JSON, SARIF, Mermaid
@@ -128,7 +129,9 @@ recon skill run todo --target <path>
 recon agent run reviewer --target <path>
 recon agent run reviewer --target <path> --llm
 recon mcp serve
+recon mcp serve --transport http --port 3000
 recon mcp connect "recon mcp serve"
+recon mcp connect http://127.0.0.1:3000/mcp
 recon config show
 ```
 

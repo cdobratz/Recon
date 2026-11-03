@@ -1,23 +1,28 @@
 //! MCP client used by `recon mcp connect`.
 //!
-//! This spawns the named command. `recon scan` does not call it.
+//! A command line spawns a stdio server. An `http://` or `https://` URL
+//! connects to a streamable HTTP endpoint. `recon scan` does not call this.
 
 use crate::config::ReconConfig;
 use anyhow::{bail, Result};
-use rmcp::transport::{ConfigureCommandExt, TokioChildProcess};
-use rmcp::ServiceExt;
+use rmcp::service::Peer;
+use rmcp::transport::{ConfigureCommandExt, StreamableHttpClientTransport, TokioChildProcess};
+use rmcp::{RoleClient, ServiceExt};
 use tokio::process::Command;
 
-/// Connect to a stdio MCP server and print its tools.
+/// Connect to an MCP server and print its tools.
 ///
-/// `command_line` is a program plus arguments. Quote arguments that contain
-/// spaces. `http://` and `https://` URIs are refused here.
+/// `command_line` is either an HTTP(S) URL of the MCP endpoint, or a program
+/// plus arguments. Quote arguments that contain spaces.
 pub async fn connect(command_line: &str, _config: &ReconConfig) -> Result<()> {
     if command_line.starts_with("http://") || command_line.starts_with("https://") {
-        bail!(
-            "HTTP MCP connect is not implemented. Pass a stdio command, for example: \
-             recon mcp connect \"recon mcp serve\""
-        );
+        let client =
+            ().serve(StreamableHttpClientTransport::from_uri(command_line))
+                .await
+                .map_err(|err| anyhow::anyhow!("mcp connect: {err}"))?;
+        show_server(client.peer()).await?;
+        drop(client);
+        return Ok(());
     }
     let mut args = split_command(command_line)?;
     let program = args.remove(0);
@@ -26,7 +31,13 @@ pub async fn connect(command_line: &str, _config: &ReconConfig) -> Result<()> {
     });
     let transport = TokioChildProcess::new(command)?;
     let client = ().serve(transport).await.map_err(|err| anyhow::anyhow!("mcp connect: {err}"))?;
-    if let Some(info) = client.peer_info() {
+    show_server(client.peer()).await?;
+    drop(client);
+    Ok(())
+}
+
+async fn show_server(peer: &Peer<RoleClient>) -> Result<()> {
+    if let Some(info) = peer.peer_info() {
         if let Some(server) = &info.server_info {
             println!("Connected to {} {}", server.name, server.version);
         }
@@ -34,7 +45,7 @@ pub async fn connect(command_line: &str, _config: &ReconConfig) -> Result<()> {
             println!("{instructions}");
         }
     }
-    let tools = client
+    let tools = peer
         .list_all_tools()
         .await
         .map_err(|err| anyhow::anyhow!("list tools: {err}"))?;
@@ -47,7 +58,6 @@ pub async fn connect(command_line: &str, _config: &ReconConfig) -> Result<()> {
             println!("  {} {}", tool.name, description);
         }
     }
-    drop(client);
     Ok(())
 }
 

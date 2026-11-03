@@ -170,9 +170,9 @@ enum McpAction {
         #[arg(long, default_value = "3000")]
         port: u16,
     },
-    /// Connect to a stdio MCP server command and list its tools
+    /// Connect to an MCP server and list its tools
     Connect {
-        /// Command line to spawn, for example `recon mcp serve`
+        /// stdio command, or an http(s) URL such as `http://127.0.0.1:3000/mcp`
         command: String,
     },
 }
