@@ -1,4 +1,4 @@
-; JavaScript AST queries for Recon.
+; JavaScript AST queries for TraceLamp.
 ; Captures: function, endpoint, shell call, database call.
 ; Shell callees: child_process, exec/execSync/execFile/spawnSync, and the shared process-spawn forms.
 ; Database callees: db/tx/stmt/conn/sql/statement/rows . Exec/Query/QueryRow/Prepare.

@@ -1,9 +1,9 @@
 //! Opt-in LLM pass over findings and short snippets.
 //!
-//! `recon scan` never calls this. `recon analyze` calls it only with `--llm`.
+//! `tracelamp scan` never calls this. `tracelamp analyze` calls it only with `--llm`.
 
 use super::AnalysisReport;
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use crate::llm::budget::{self, estimate_cost};
 use crate::llm::payload;
 use crate::llm::prompts;
@@ -23,7 +23,7 @@ struct LlmJson {
 pub struct LlmPass<'a> {
     pub provider_name: &'a str,
     pub model: Option<&'a str>,
-    pub config: &'a ReconConfig,
+    pub config: &'a TraceLampConfig,
     pub max_cost_usd: f64,
 }
 
@@ -154,7 +154,7 @@ fn default_model(provider: &str) -> &'static str {
     }
 }
 
-fn resolve_api_key(provider: &str, config: &ReconConfig) -> Option<String> {
+fn resolve_api_key(provider: &str, config: &TraceLampConfig) -> Option<String> {
     if let Some(key) = config.llm.api_key.as_deref().filter(|key| !key.is_empty()) {
         return Some(key.to_string());
     }
@@ -166,7 +166,7 @@ fn resolve_api_key(provider: &str, config: &ReconConfig) -> Option<String> {
     std::env::var(var).ok().filter(|key| !key.is_empty())
 }
 
-fn resolve_base_url(provider: &str, config: &ReconConfig) -> Option<String> {
+fn resolve_base_url(provider: &str, config: &TraceLampConfig) -> Option<String> {
     if let Some(url) = config.llm.base_url.as_deref().filter(|url| !url.is_empty()) {
         return Some(url.to_string());
     }

@@ -1,4 +1,4 @@
-; Python AST queries for Recon.
+; Python AST queries for TraceLamp.
 ; Captures: function, endpoint, shell call, database call.
 ; Shell callees: subprocess, os.system, os.popen, and the shared process-spawn forms.
 ; Database callees: db/tx/stmt/conn/sql/statement/rows . Exec/Query/QueryRow/Prepare.

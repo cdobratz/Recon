@@ -4,7 +4,7 @@ use colored::*;
 
 /// Print scan findings to terminal with color
 pub fn print_scan(results: &ScanResults) {
-    println!("\n{}", "=== Recon Scan Results ===".bold());
+    println!("\n{}", "=== TraceLamp Scan Results ===".bold());
     println!("Files scanned: {}", results.files_scanned);
     println!("Scan time: {}ms", results.scan_duration_ms);
     println!("Findings: {}", results.findings.len());
@@ -106,7 +106,7 @@ fn severity_icon(severity: &str) -> ColoredString {
 
 /// Print analysis results to terminal
 pub fn print_analysis(results: &AnalysisResults) {
-    println!("\n{}", "=== Recon Analysis Results ===".bold());
+    println!("\n{}", "=== TraceLamp Analysis Results ===".bold());
 
     if let Some(ref report) = results.security {
         print_report(report);

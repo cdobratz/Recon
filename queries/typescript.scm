@@ -1,4 +1,4 @@
-; TypeScript and TSX AST queries for Recon.
+; TypeScript and TSX AST queries for TraceLamp.
 ; Same capture names as javascript.scm. Node types match the TypeScript grammar.
 
 (function_declaration

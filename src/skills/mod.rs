@@ -1,6 +1,6 @@
 pub mod skill;
 
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use crate::parsers::Language;
 use crate::scanner::suppress;
 use crate::scanner::walk;
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 /// Add a skill from a TOML file
-pub fn add_skill(path: &str, config: &ReconConfig) -> Result<()> {
+pub fn add_skill(path: &str, config: &TraceLampConfig) -> Result<()> {
     let skill_path = Path::new(path);
     if !skill_path.exists() {
         anyhow::bail!("Skill file not found: {}", path);
@@ -33,10 +33,10 @@ pub fn add_skill(path: &str, config: &ReconConfig) -> Result<()> {
 }
 
 /// List all registered skills
-pub fn list_skills(config: &ReconConfig) -> Result<()> {
+pub fn list_skills(config: &TraceLampConfig) -> Result<()> {
     let skills_dir = Path::new(&config.skills.directory);
     if !skills_dir.exists() {
-        println!("No skills directory found. Run 'recon skill add <path>' to add skills.");
+        println!("No skills directory found. Run 'tracelamp skill add <path>' to add skills.");
         return Ok(());
     }
 
@@ -53,7 +53,7 @@ pub fn list_skills(config: &ReconConfig) -> Result<()> {
 }
 
 /// Remove a skill by name
-pub fn remove_skill(name: &str, config: &ReconConfig) -> Result<()> {
+pub fn remove_skill(name: &str, config: &TraceLampConfig) -> Result<()> {
     let skills_dir = Path::new(&config.skills.directory);
     let skill_file = skills_dir.join(format!("{}.toml", name));
 
@@ -67,7 +67,7 @@ pub fn remove_skill(name: &str, config: &ReconConfig) -> Result<()> {
 }
 
 /// Load all skills from the skills directory
-pub fn load_skills(config: &ReconConfig) -> Result<Vec<SkillDefinition>> {
+pub fn load_skills(config: &TraceLampConfig) -> Result<Vec<SkillDefinition>> {
     let skills_dir = Path::new(&config.skills.directory);
     let mut skills = Vec::new();
 
@@ -89,7 +89,7 @@ pub fn load_skills(config: &ReconConfig) -> Result<Vec<SkillDefinition>> {
 }
 
 /// Run one skill's search patterns. This only reads files.
-pub fn run_skill(name: &str, target: &str, config: &ReconConfig) -> Result<Vec<Finding>> {
+pub fn run_skill(name: &str, target: &str, config: &TraceLampConfig) -> Result<Vec<Finding>> {
     let findings = collect_skill(name, target, config)?;
     println!("{} finding(s) from skill {}.", findings.len(), name);
     for finding in &findings {
@@ -102,7 +102,7 @@ pub fn run_skill(name: &str, target: &str, config: &ReconConfig) -> Result<Vec<F
 }
 
 /// Apply a named skill and return its findings. Callers print them.
-pub fn collect_skill(name: &str, target: &str, config: &ReconConfig) -> Result<Vec<Finding>> {
+pub fn collect_skill(name: &str, target: &str, config: &TraceLampConfig) -> Result<Vec<Finding>> {
     let skill = load_one(name, config)?;
     let patterns = compile_patterns(&skill)?;
     if patterns.is_empty() {
@@ -152,10 +152,12 @@ pub fn collect_skill(name: &str, target: &str, config: &ReconConfig) -> Result<V
     Ok(findings)
 }
 
-fn load_one(name: &str, config: &ReconConfig) -> Result<SkillDefinition> {
+fn load_one(name: &str, config: &TraceLampConfig) -> Result<SkillDefinition> {
     let path = Path::new(&config.skills.directory).join(format!("{name}.toml"));
     if !path.exists() {
-        anyhow::bail!("Skill not found: {name}. Run 'recon skill list' to see registered skills.");
+        anyhow::bail!(
+            "Skill not found: {name}. Run 'tracelamp skill list' to see registered skills."
+        );
     }
     let contents = std::fs::read_to_string(&path)?;
     Ok(toml::from_str(&contents)?)
@@ -248,7 +250,7 @@ severity = "low"
         std::fs::write(repo.join("node_modules/skip.py"), "# TODO: ignore\n").unwrap();
         std::fs::write(repo.join("notes.txt"), "TODO in a text file\n").unwrap();
 
-        let mut config = ReconConfig::default();
+        let mut config = TraceLampConfig::default();
         config.skills.directory = skills.display().to_string();
         let findings = collect_skill("todo", repo.to_str().unwrap(), &config).unwrap();
         assert_eq!(findings.len(), 1);
@@ -281,7 +283,7 @@ description = "leftover TODO"
             "# recon:ignore skill/todo\n# TODO: kept\n",
         )
         .unwrap();
-        let mut config = ReconConfig::default();
+        let mut config = TraceLampConfig::default();
         config.skills.directory = skills.display().to_string();
         let findings = collect_skill("todo", repo.to_str().unwrap(), &config).unwrap();
         assert!(findings.is_empty(), "{findings:?}");

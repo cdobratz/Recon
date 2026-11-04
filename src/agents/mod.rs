@@ -1,12 +1,12 @@
 pub mod agent;
 
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use agent::AgentConfig;
 use anyhow::Result;
 use std::path::Path;
 
 /// Add an agent from a config file
-pub fn add_agent(config_path: &str, _recon_config: &ReconConfig) -> Result<()> {
+pub fn add_agent(config_path: &str, _recon_config: &TraceLampConfig) -> Result<()> {
     let path = Path::new(config_path);
     if !path.exists() {
         anyhow::bail!("Agent config not found: {}", config_path);
@@ -26,7 +26,7 @@ pub fn add_agent(config_path: &str, _recon_config: &ReconConfig) -> Result<()> {
 }
 
 /// List all registered agents
-pub fn list_agents(_config: &ReconConfig) -> Result<()> {
+pub fn list_agents(_config: &TraceLampConfig) -> Result<()> {
     let agents_dir = Path::new("agents");
     if !agents_dir.exists() {
         println!("No agents directory found.");
@@ -66,12 +66,14 @@ pub fn list_agents(_config: &ReconConfig) -> Result<()> {
 pub async fn run_agent(
     name: &str,
     target: &str,
-    config: &ReconConfig,
+    config: &TraceLampConfig,
     use_llm: bool,
 ) -> Result<()> {
     let agent_file = Path::new("agents").join(format!("{name}.toml"));
     if !agent_file.exists() {
-        anyhow::bail!("Agent not found: {name}. Run 'recon agent list' to see available agents.");
+        anyhow::bail!(
+            "Agent not found: {name}. Run 'tracelamp agent list' to see available agents."
+        );
     }
 
     let contents = std::fs::read_to_string(&agent_file)?;
@@ -83,7 +85,7 @@ pub async fn run_agent(
 pub async fn execute(
     agent: &AgentConfig,
     target: &str,
-    config: &ReconConfig,
+    config: &TraceLampConfig,
     use_llm: bool,
 ) -> Result<crate::analysis::AnalysisResults> {
     println!("Running agent '{}' against target: {}", agent.name, target);
@@ -153,7 +155,7 @@ severity = "info"
         std::fs::create_dir_all(&repo).unwrap();
         std::fs::write(repo.join("app.py"), "# TODO: later\n").unwrap();
 
-        let mut config = ReconConfig::default();
+        let mut config = TraceLampConfig::default();
         config.skills.directory = skills.display().to_string();
         let agent = AgentConfig {
             name: "reviewer".into(),

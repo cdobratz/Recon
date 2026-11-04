@@ -1,4 +1,4 @@
-//! Directory walk that honors `.gitignore` and `.reconignore`.
+//! Directory walk that honors `.gitignore`, `.tracelampignore`, and `.reconignore`.
 //!
 //! Default directories are always skipped. Hidden files such as `.mcp.json`
 //! and `.cursor/` are still visited. The walk only reads the filesystem.
@@ -31,6 +31,7 @@ pub fn list_files(root: &Path, extra_patterns: &[&str]) -> Result<Vec<PathBuf>> 
         .git_global(false)
         .git_exclude(true)
         .require_git(false)
+        .add_custom_ignore_filename(".tracelampignore")
         .add_custom_ignore_filename(".reconignore")
         .filter_entry({
             let extra = Arc::clone(&extra);
@@ -155,5 +156,22 @@ mod tests {
             !names.iter().any(|name| name == "local_skip.py"),
             "{names:?}"
         );
+    }
+
+    #[test]
+    fn tracelampignore_skips_matching_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::write(root.join("kept.py"), "print(1)\n").unwrap();
+        std::fs::write(root.join(".tracelampignore"), "skip.py\n").unwrap();
+        std::fs::write(root.join("skip.py"), "print(2)\n").unwrap();
+
+        let files = list_files(root, &[]).unwrap();
+        let names: Vec<String> = files
+            .iter()
+            .map(|path| path.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert!(names.iter().any(|name| name == "kept.py"), "{names:?}");
+        assert!(!names.iter().any(|name| name == "skip.py"), "{names:?}");
     }
 }

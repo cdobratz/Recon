@@ -170,7 +170,7 @@ fn assert_inventory_graph(value: &Value) {
     assert!(mermaid.contains("API_TOKEN"), "{mermaid}");
 
     let chain_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/graph/chain");
-    let output = Command::new(env!("CARGO_BIN_EXE_recon"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tracelamp"))
         .args(["scan", chain_dir.to_str().unwrap(), "--format", "mermaid"])
         .output()
         .expect("mermaid scan");
@@ -197,7 +197,7 @@ fn rule_findings<'a>(value: &'a Value, path: &Path, rule: &str) -> Vec<&'a Value
 }
 
 fn scan_json(root: &Path) -> Value {
-    let output = Command::new(env!("CARGO_BIN_EXE_recon"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tracelamp"))
         .args(["scan", root.to_str().unwrap(), "--format", "json"])
         .output()
         .expect("run recon");

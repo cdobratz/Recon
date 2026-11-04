@@ -1,14 +1,19 @@
-# Recon
+# TraceLamp
+
+[![CI](https://github.com/cdobratz/Recon/actions/workflows/ci.yml/badge.svg)](https://github.com/cdobratz/Recon/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 Static, no-execute scanner for what AI agents and MCP servers can touch: tools, data stores, credentials, and cloud spend. A scan is **static, no-execute, and CI-safe**. It never spawns processes and never opens network connections, so it can run on untrusted pull requests without a sandbox.
 
-Recon does not start MCP servers to read their tool lists. Config files are parsed as text.
+TraceLamp does not start MCP servers to read their tool lists. Config files are parsed as text.
+
+The command is `tracelamp`. Documentation and examples below use that name. See [Compatibility](#compatibility) for the `recon` command and the older config and ignore filenames.
 
 ## Implemented / Planned
 
 | Area | Status |
 |---|---|
-| `recon scan` for API endpoints, functions, DB connections, agents, and secrets | Implemented |
+| `tracelamp scan` for API endpoints, functions, DB connections, agents, and secrets | Implemented |
 | Terminal, JSON, and SARIF 2.1.0 output | Implemented |
 | Shell vs database call precision (`exec.Command` is shell, `db.Exec` is not) | Implemented |
 | Static, no-execute, CI-safe scan | Implemented |
@@ -17,55 +22,55 @@ Recon does not start MCP servers to read their tool lists. Config files are pars
 | "Agent can spend cloud money" rule, with remediation pointing at AzGuard | Implemented |
 | Tree-sitter queries for Python, JavaScript, TypeScript, Go, and Rust (functions, API endpoints, shell vs database calls) | Implemented |
 | Regex fallback for other languages | Implemented |
-| Default ignores, `.gitignore`, and `.reconignore` | Implemented |
-| Inline `recon:ignore` suppressions and a baseline file | Implemented |
+| Default ignores, `.gitignore`, `.tracelampignore`, and `.reconignore` | Implemented |
+| Inline `tracelamp:ignore` suppressions (and `recon:ignore`) and a baseline file | Implemented |
 | CycloneDX 1.6 AI-BOM export (`--format cyclonedx`) | Implemented |
 | GitHub Actions CI (`cargo fmt --check`, build, test, clippy) | Implemented |
-| Opt-in LLM analysis (`recon analyze --llm`, local Ollama by default, hosted OpenAI and Anthropic) | Implemented |
-| MCP server (`recon mcp serve`, stdio and streamable HTTP) with `scan_repo`, `list_findings`, `explain_finding`, `agent_inventory` | Implemented |
-| MCP client (`recon mcp connect` for a stdio command or an http(s) URL) | Implemented |
-| Skills (`recon skill run`) and agent workflows (`recon agent run`) | Implemented |
+| Opt-in LLM analysis (`tracelamp analyze --llm`, local Ollama by default, hosted OpenAI and Anthropic) | Implemented |
+| MCP server (`tracelamp mcp serve`, stdio and streamable HTTP) with `scan_repo`, `list_findings`, `explain_finding`, `agent_inventory` | Implemented |
+| MCP client (`tracelamp mcp connect` for a stdio command or an http(s) URL) | Implemented |
+| Skills (`tracelamp skill run`) and agent workflows (`tracelamp agent run`) | Implemented |
 
 ## Static scan guarantee
 
-`recon scan` and `recon report` only read files under the path you pass. They do not:
+`tracelamp scan` and `tracelamp report` only read files under the path you pass. They do not:
 
 - spawn `npx`, `uvx`, shells, or any other process
 - connect to MCP server URLs, package registries, or LLM APIs
 
 The check is `tests/static_scan.rs`. It runs `scan` and `analyze` (without `--llm`) under `strace` and fails if the process calls `execve` (other than the scanner itself) or a network syscall.
 
-`recon analyze --llm` is opt-in. It sends findings and short snippets to the model, never whole files, and stops when the estimated cost would pass `llm.max_cost_usd` (0.25 by default). The default provider is local Ollama (`llama3.2` at `http://localhost:11434`, or `OLLAMA_HOST`). `--provider openai` uses `OPENAI_API_KEY` and `--provider anthropic` uses `ANTHROPIC_API_KEY`. Ollama is priced at zero, so it always fits the cap.
+`tracelamp analyze --llm` is opt-in. It sends findings and short snippets to the model, never whole files, and stops when the estimated cost would pass `llm.max_cost_usd` (0.25 by default). The default provider is local Ollama (`llama3.2` at `http://localhost:11434`, or `OLLAMA_HOST`). `--provider openai` uses `OPENAI_API_KEY` and `--provider anthropic` uses `ANTHROPIC_API_KEY`. Ollama is priced at zero, so it always fits the cap.
 
-`recon mcp serve` speaks MCP over stdio. `recon mcp serve --transport http --port 3000` listens on `0.0.0.0:3000` and serves the same tools at `/mcp` (streamable HTTP). `recon mcp connect` either spawns a stdio command or opens an `http://` / `https://` endpoint. Neither path is used by `scan`.
+`tracelamp mcp serve` speaks MCP over stdio. `tracelamp mcp serve --transport http --port 3000` listens on `0.0.0.0:3000` and serves the same tools at `/mcp` (streamable HTTP). The MCP server name is `tracelamp`. `tracelamp mcp connect` either spawns a stdio command or opens an `http://` / `https://` endpoint. Neither path is used by `scan`.
 
 ```bash
-recon scan <path>
-recon scan <path> --format json
-recon scan <path> --format sarif
-recon scan <path> --format mermaid
-recon scan <path> --format cyclonedx
-recon scan <path> --write-baseline recon-baseline.json
-recon scan <path> --baseline recon-baseline.json
-recon report <path> --format sarif
-recon analyze <path>
-recon analyze <path> --llm
-recon analyze <path> --llm --provider openai --max-cost 0.25
-recon mcp serve
-recon mcp serve --transport http --port 3000
-recon mcp connect "recon mcp serve"
-recon mcp connect http://127.0.0.1:3000/mcp
+tracelamp scan <path>
+tracelamp scan <path> --format json
+tracelamp scan <path> --format sarif
+tracelamp scan <path> --format mermaid
+tracelamp scan <path> --format cyclonedx
+tracelamp scan <path> --write-baseline tracelamp-baseline.json
+tracelamp scan <path> --baseline tracelamp-baseline.json
+tracelamp report <path> --format sarif
+tracelamp analyze <path>
+tracelamp analyze <path> --llm
+tracelamp analyze <path> --llm --provider openai --max-cost 0.25
+tracelamp mcp serve
+tracelamp mcp serve --transport http --port 3000
+tracelamp mcp connect "tracelamp mcp serve"
+tracelamp mcp connect http://127.0.0.1:3000/mcp
 ```
 
-JSON output includes `inventory` (agent → MCP server/tool → data store → credential) and `inventory_mermaid`. `--format mermaid` prints only the diagram. `--format cyclonedx` prints a CycloneDX 1.6 JSON document of that inventory (agents, MCP servers, tools, data stores, credentials).
+JSON output includes `inventory` (agent → MCP server/tool → data store → credential) and `inventory_mermaid`. `--format mermaid` prints only the diagram. `--format cyclonedx` prints a CycloneDX 1.6 JSON document of that inventory (agents, MCP servers, tools, data stores, credentials). SARIF output names the tool driver `tracelamp` and sets `informationUri` to `https://tracelamp.dev`.
 
 `--baseline` prints only findings whose fingerprint is not already in the file and exits 1 when any remain, so CI fails on new findings. `--write-baseline` records the current findings and does not fail the run. A fingerprint is the SHA-256 of the rule id, the path relative to the scan root, and the snippet with whitespace collapsed. Line numbers are not part of it.
 
-Suppress a finding by putting `recon:ignore <rule-id>` on the same line or the previous line. `//`, `#`, and `/* */` comments all work. Several rule ids can be separated by spaces or commas.
+Suppress a finding by putting `tracelamp:ignore <rule-id>` on the same line or the previous line. `recon:ignore <rule-id>` still works. `//`, `#`, and `/* */` comments all work. Several rule ids can be separated by spaces or commas.
 
 ## Rules
 
-Each rule has a stable id, help text, an [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) ASI mapping, and a SARIF `tool.driver.rules[]` entry.
+Each rule has a stable id, help text, an [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/) ASI mapping, and a SARIF `tool.driver.rules[]` entry. Rule ids keep the `recon/` prefix so existing baselines, suppressions, and SARIF results stay valid.
 
 | Rule ID | ASI | What it flags |
 |---|---|---|
@@ -79,6 +84,23 @@ Each rule has a stable id, help text, an [OWASP Top 10 for Agentic Applications 
 
 Configs read for the inventory: `mcp.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `claude_desktop_config.json`, and LangChain tool lists.
 
+## Compatibility
+
+These aliases keep existing setups working:
+
+| Current | Still accepted |
+|---|---|
+| `tracelamp` command | `recon` command (same CLI, installed as a second binary) |
+| `~/.config/tracelamp/config.toml` | `~/.config/recon/config.toml`, used when the TraceLamp file is absent |
+| `.tracelampignore` | `.reconignore` |
+| `tracelamp:ignore <rule-id>` | `recon:ignore <rule-id>` |
+
+`tracelamp config init` creates `~/.config/tracelamp/config.toml` when neither file exists. If only the Recon file exists, init and `config set` keep using that file instead of shadowing it with a new one. When both exist, the TraceLamp file wins.
+
+TraceLamp does not define its own environment variables, so there is no `RECON_` prefix to rename. Provider variables stay `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `OLLAMA_HOST`. Log filters follow the crate name, for example `RUST_LOG=tracelamp=debug`.
+
+Rule ids (`recon/shell-execution` and the rest) are unchanged.
+
 ## Build
 
 HTTP uses `reqwest` with `rustls-tls` (no OpenSSL / `libssl-dev`).
@@ -89,15 +111,19 @@ cargo test
 cargo clippy --all-targets -- -D warnings
 ```
 
-Default ignores include `.git`, `node_modules`, `target`, `vendor`, `dist`, `build`, `__pycache__`, `.venv`, and `.go` (a vendored Go toolchain). The walk also honors `.gitignore` and `.reconignore` (gitignore syntax) and skips binary files (known extensions or a NUL byte) and files larger than `max_file_size` (1 MiB by default). Hidden paths such as `.cursor/mcp.json` are still scanned.
+Default ignores include `.git`, `node_modules`, `target`, `vendor`, `dist`, `build`, `__pycache__`, `.venv`, and `.go` (a vendored Go toolchain). The walk also honors `.gitignore`, `.tracelampignore`, and `.reconignore` (gitignore syntax) and skips binary files (known extensions or a NUL byte) and files larger than `max_file_size` (1 MiB by default). Hidden paths such as `.cursor/mcp.json` are still scanned.
 
 ## Project structure
 
 ```
-recon/
+tracelamp/
 ├── Cargo.toml
+├── LICENSE
+├── NOTICE
 ├── src/
-│   ├── main.rs
+│   ├── lib.rs
+│   ├── main.rs           # tracelamp command
+│   ├── bin/recon.rs      # recon command alias
 │   ├── config.rs
 │   ├── scanner/          # in-process scanners, MCP inventory, rules
 │   ├── analysis/         # rule-based scores; optional LLM pass
@@ -106,7 +132,7 @@ recon/
 │   ├── mcp/              # stdio and streamable HTTP MCP server and client
 │   ├── skills/
 │   ├── agents/
-│   └── report/           # terminal, JSON, SARIF, Mermaid
+│   └── report/           # terminal, JSON, SARIF, Mermaid, CycloneDX
 ├── queries/              # tree-sitter .scm queries, one file per language
 ├── config/default.toml
 └── tests/fixtures/       # rule fixtures, language corpus, and expected results
@@ -115,24 +141,28 @@ recon/
 ## CLI
 
 ```
-recon scan <path>
-recon scan <path> --format json
-recon scan <path> --format cyclonedx
-recon scan <path> --write-baseline recon-baseline.json
-recon scan <path> --baseline recon-baseline.json
-recon scan <path> --only agents,mcp
-recon analyze <path>
-recon analyze <path> --llm
-recon report <path> --format sarif
-recon skill add ./todo.toml
-recon skill run todo --target <path>
-recon agent run reviewer --target <path>
-recon agent run reviewer --target <path> --llm
-recon mcp serve
-recon mcp serve --transport http --port 3000
-recon mcp connect "recon mcp serve"
-recon mcp connect http://127.0.0.1:3000/mcp
-recon config show
+tracelamp scan <path>
+tracelamp scan <path> --format json
+tracelamp scan <path> --format cyclonedx
+tracelamp scan <path> --write-baseline tracelamp-baseline.json
+tracelamp scan <path> --baseline tracelamp-baseline.json
+tracelamp scan <path> --only agents,mcp
+tracelamp analyze <path>
+tracelamp analyze <path> --llm
+tracelamp report <path> --format sarif
+tracelamp skill add ./todo.toml
+tracelamp skill run todo --target <path>
+tracelamp agent run reviewer --target <path>
+tracelamp agent run reviewer --target <path> --llm
+tracelamp mcp serve
+tracelamp mcp serve --transport http --port 3000
+tracelamp mcp connect "tracelamp mcp serve"
+tracelamp mcp connect http://127.0.0.1:3000/mcp
+tracelamp config show
 ```
 
 `analyze` scores the static findings. Add `--llm` to also ask a model about those findings. A skill is a TOML file of regex search patterns; `skill run` and `agent run` apply them while reading files. An agent runs the static scan, then its skills, then the rule scores. `--llm` or `use_llm = true` in the agent file is what turns the model on.
+
+## License
+
+TraceLamp is licensed under the [Apache License, Version 2.0](LICENSE). Copyright (c) 2026 Poietes LLC. See [NOTICE](NOTICE).

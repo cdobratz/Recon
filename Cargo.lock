@@ -1461,45 +1461,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "recon"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "chrono",
- "clap",
- "colored",
- "dirs",
- "futures",
- "ignore",
- "insta",
- "regex",
- "reqwest 0.12.28",
- "rmcp",
- "schemars",
- "serde",
- "serde_json",
- "sha2",
- "streaming-iterator",
- "tempfile",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util",
- "toml",
- "tracing",
- "tracing-subscriber",
- "tree-sitter",
- "tree-sitter-go",
- "tree-sitter-javascript",
- "tree-sitter-python",
- "tree-sitter-rust",
- "tree-sitter-typescript",
- "uuid",
- "walkdir",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2365,6 +2326,45 @@ name = "tower-service"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
+
+[[package]]
+name = "tracelamp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "chrono",
+ "clap",
+ "colored",
+ "dirs",
+ "futures",
+ "ignore",
+ "insta",
+ "regex",
+ "reqwest 0.12.28",
+ "rmcp",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2",
+ "streaming-iterator",
+ "tempfile",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "tree-sitter",
+ "tree-sitter-go",
+ "tree-sitter-javascript",
+ "tree-sitter-python",
+ "tree-sitter-rust",
+ "tree-sitter-typescript",
+ "uuid",
+ "walkdir",
+]
 
 [[package]]
 name = "tracing"

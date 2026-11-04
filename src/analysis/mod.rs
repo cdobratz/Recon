@@ -3,7 +3,7 @@ pub mod api_efficiency;
 pub mod llm;
 pub mod security;
 
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use crate::scanner::ScanResults;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -64,7 +64,7 @@ pub struct AnalysisRequest<'a> {
 /// `request.use_llm` is set, and it receives findings plus short snippets.
 pub async fn run_analysis(
     scan_results: &ScanResults,
-    config: &ReconConfig,
+    config: &TraceLampConfig,
     request: AnalysisRequest<'_>,
 ) -> Result<AnalysisResults> {
     let cats: Vec<&str> = request

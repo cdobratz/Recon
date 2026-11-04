@@ -1,9 +1,9 @@
-//! MCP client used by `recon mcp connect`.
+//! MCP client used by `tracelamp mcp connect`.
 //!
 //! A command line spawns a stdio server. An `http://` or `https://` URL
-//! connects to a streamable HTTP endpoint. `recon scan` does not call this.
+//! connects to a streamable HTTP endpoint. `tracelamp scan` does not call this.
 
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use anyhow::{bail, Result};
 use rmcp::service::Peer;
 use rmcp::transport::{ConfigureCommandExt, StreamableHttpClientTransport, TokioChildProcess};
@@ -14,7 +14,7 @@ use tokio::process::Command;
 ///
 /// `command_line` is either an HTTP(S) URL of the MCP endpoint, or a program
 /// plus arguments. Quote arguments that contain spaces.
-pub async fn connect(command_line: &str, _config: &ReconConfig) -> Result<()> {
+pub async fn connect(command_line: &str, _config: &TraceLampConfig) -> Result<()> {
     if command_line.starts_with("http://") || command_line.starts_with("https://") {
         let client =
             ().serve(StreamableHttpClientTransport::from_uri(command_line))
@@ -94,10 +94,16 @@ mod tests {
 
     #[test]
     fn quotes_keep_spaces() {
-        let args = split_command(r#"recon mcp serve --config "/tmp/my config.toml""#).unwrap();
+        let args = split_command(r#"tracelamp mcp serve --config "/tmp/my config.toml""#).unwrap();
         assert_eq!(
             args,
-            vec!["recon", "mcp", "serve", "--config", "/tmp/my config.toml"]
+            vec![
+                "tracelamp",
+                "mcp",
+                "serve",
+                "--config",
+                "/tmp/my config.toml"
+            ]
         );
     }
 }

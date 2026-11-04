@@ -16,7 +16,7 @@ pub mod secrets;
 pub mod suppress;
 pub mod walk;
 
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use crate::parsers::ParserRegistry;
 use anyhow::Result;
 use mcp_inventory::InventoryGraph;
@@ -64,7 +64,7 @@ pub struct ScanResults {
     pub fail_on_new: bool,
 }
 
-/// Options for one `recon scan` invocation.
+/// Options for one `tracelamp scan` invocation.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ScanOptions<'a> {
     pub only: Option<&'a [String]>,
@@ -76,7 +76,7 @@ pub struct ScanOptions<'a> {
 /// Run all enabled scanners against a repository path.
 pub async fn run_scan(
     repo_path: &str,
-    config: &ReconConfig,
+    config: &TraceLampConfig,
     options: ScanOptions<'_>,
 ) -> Result<ScanResults> {
     let start = std::time::Instant::now();

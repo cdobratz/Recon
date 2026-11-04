@@ -1,14 +1,14 @@
-//! Tool bodies for the Recon MCP server.
+//! Tool bodies for the TraceLamp MCP server.
 //!
 //! Each tool calls the in-process scanner. None of them spawn a process or
 //! open a network connection.
 
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use crate::scanner::{self, rules, ScanOptions};
 use anyhow::Result;
 use serde_json::{json, Value};
 
-pub async fn scan_repo(config: &ReconConfig, path: &str) -> Result<Value> {
+pub async fn scan_repo(config: &TraceLampConfig, path: &str) -> Result<Value> {
     let results = scanner::run_scan(path, config, ScanOptions::default()).await?;
     Ok(json!({
         "files_scanned": results.files_scanned,
@@ -19,7 +19,7 @@ pub async fn scan_repo(config: &ReconConfig, path: &str) -> Result<Value> {
 }
 
 pub async fn list_findings(
-    config: &ReconConfig,
+    config: &TraceLampConfig,
     path: &str,
     severity: Option<&str>,
 ) -> Result<Value> {
@@ -59,7 +59,7 @@ pub fn explain_finding(rule_id: &str) -> Value {
     }
 }
 
-pub async fn agent_inventory(config: &ReconConfig, path: &str) -> Result<Value> {
+pub async fn agent_inventory(config: &TraceLampConfig, path: &str) -> Result<Value> {
     let only = ["agents".to_string(), "mcp".to_string()];
     let results = scanner::run_scan(
         path,
@@ -106,7 +106,7 @@ mod tests {
         )
         .unwrap();
 
-        let config = ReconConfig::default();
+        let config = TraceLampConfig::default();
         let path = dir.path().to_str().unwrap();
         let scan = scan_repo(&config, path).await.unwrap();
         assert!(scan["finding_count"].as_u64().unwrap() >= 1);
