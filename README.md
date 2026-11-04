@@ -1,6 +1,6 @@
 # TraceLamp
 
-[![CI](https://github.com/cdobratz/Recon/actions/workflows/ci.yml/badge.svg)](https://github.com/cdobratz/Recon/actions/workflows/ci.yml)
+[![CI](https://github.com/cdobratz/TraceLamp/actions/workflows/ci.yml/badge.svg)](https://github.com/cdobratz/TraceLamp/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 Static, no-execute scanner for what AI agents and MCP servers can touch: tools, data stores, credentials, and cloud spend. A scan is **static, no-execute, and CI-safe**. It never spawns processes and never opens network connections, so it can run on untrusted pull requests without a sandbox.
