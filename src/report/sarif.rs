@@ -66,9 +66,9 @@ pub fn format_scan(results: &ScanResults) -> Result<String> {
         "runs": [{
             "tool": {
                 "driver": {
-                    "name": "recon",
+                    "name": "tracelamp",
                     "version": env!("CARGO_PKG_VERSION"),
-                    "informationUri": "https://github.com/cdobratz/Recon",
+                    "informationUri": "https://tracelamp.dev",
                     "rules": sarif_rules
                 }
             },
@@ -115,9 +115,10 @@ mod tests {
     fn sarif_lists_stable_rules_with_help_and_asi() {
         let text = format_scan(&empty_results()).unwrap();
         let sarif: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(sarif["runs"][0]["tool"]["driver"]["name"], "tracelamp");
         assert_eq!(
             sarif["runs"][0]["tool"]["driver"]["informationUri"],
-            "https://github.com/cdobratz/Recon"
+            "https://tracelamp.dev"
         );
         let rules = sarif["runs"][0]["tool"]["driver"]["rules"]
             .as_array()

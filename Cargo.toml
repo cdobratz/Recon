@@ -1,13 +1,22 @@
 [package]
-name = "recon"
+name = "tracelamp"
 version = "0.1.0"
 edition = "2021"
-description = "AI-powered CLI tool for scanning repos: security risks, API efficiency, agent-data interactions"
-license = "MIT"
+description = "TraceLamp scans repositories for security risks, API efficiency, and agent-data interactions"
+license = "Apache-2.0"
+autobins = false
+
+[lib]
+path = "src/lib.rs"
 
 [[bin]]
-name = "recon"
+name = "tracelamp"
 path = "src/main.rs"
+
+# Installed alongside `tracelamp` so existing scripts that call `recon` keep working.
+[[bin]]
+name = "recon"
+path = "src/bin/recon.rs"
 
 [dependencies]
 # CLI

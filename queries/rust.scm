@@ -1,4 +1,4 @@
-; Rust AST queries for Recon.
+; Rust AST queries for TraceLamp.
 ; Shell callees include std::process::Command::new, tokio::process::Command::new, and Command::new.
 ; Database callees use the same receiver and method names as the Go patterns.
 

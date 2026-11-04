@@ -25,8 +25,8 @@ fn document(graph: &InventoryGraph) -> Value {
             "bom-ref": agent_ref,
             "name": agent.name,
             "properties": [
-                { "name": "recon:kind", "value": "agent" },
-                { "name": "recon:source", "value": agent.source }
+                { "name": "tracelamp:kind", "value": "agent" },
+                { "name": "tracelamp:source", "value": agent.source }
             ]
         }));
         let mut server_refs = Vec::new();
@@ -43,7 +43,7 @@ fn document(graph: &InventoryGraph) -> Value {
                     "bom-ref": tool_ref,
                     "name": tool.name,
                     "description": tool.description,
-                    "properties": [{ "name": "recon:kind", "value": "tool" }]
+                    "properties": [{ "name": "tracelamp:kind", "value": "tool" }]
                 }));
             }
             for (di, store) in server.data_stores.iter().enumerate() {
@@ -54,8 +54,8 @@ fn document(graph: &InventoryGraph) -> Value {
                     "bom-ref": store_ref,
                     "name": store.name,
                     "properties": [
-                        { "name": "recon:kind", "value": "data-store" },
-                        { "name": "recon:store-kind", "value": store.kind }
+                        { "name": "tracelamp:kind", "value": "data-store" },
+                        { "name": "tracelamp:store-kind", "value": store.kind }
                     ]
                 }));
             }
@@ -67,8 +67,8 @@ fn document(graph: &InventoryGraph) -> Value {
                     "bom-ref": cred_ref,
                     "name": cred.name,
                     "properties": [
-                        { "name": "recon:kind", "value": "credential" },
-                        { "name": "recon:storage", "value": cred.storage }
+                        { "name": "tracelamp:kind", "value": "credential" },
+                        { "name": "tracelamp:storage", "value": cred.storage }
                     ]
                 }));
             }
@@ -86,7 +86,7 @@ fn document(graph: &InventoryGraph) -> Value {
     dependencies.insert(
         0,
         json!({
-            "ref": "recon-scan",
+            "ref": "tracelamp-scan",
             "dependsOn": agent_refs
         }),
     );
@@ -98,13 +98,13 @@ fn document(graph: &InventoryGraph) -> Value {
         "metadata": {
             "component": {
                 "type": "application",
-                "bom-ref": "recon-scan",
-                "name": "recon-scan"
+                "bom-ref": "tracelamp-scan",
+                "name": "tracelamp-scan"
             },
             "tools": {
                 "components": [{
                     "type": "application",
-                    "name": "recon",
+                    "name": "tracelamp",
                     "version": env!("CARGO_PKG_VERSION")
                 }]
             }
@@ -115,13 +115,13 @@ fn document(graph: &InventoryGraph) -> Value {
 }
 
 fn server_component(server_ref: &str, server: &InventoryServer) -> Value {
-    let mut properties = vec![json!({ "name": "recon:kind", "value": "mcp-server" })];
+    let mut properties = vec![json!({ "name": "tracelamp:kind", "value": "mcp-server" })];
     if !server.command.is_empty() {
-        properties.push(json!({ "name": "recon:command", "value": server.command }));
+        properties.push(json!({ "name": "tracelamp:command", "value": server.command }));
     }
     if !server.args.is_empty() {
         properties.push(json!({
-            "name": "recon:args",
+            "name": "tracelamp:args",
             "value": server.args.join(" ")
         }));
     }

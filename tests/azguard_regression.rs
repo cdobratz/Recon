@@ -10,7 +10,7 @@ const AZGUARD_REV: &str = "bdeb046116f29541185f884ce6c940d44299cec8";
 #[test]
 fn azguard_has_no_high_severity_false_positives() {
     let root = ensure_azguard();
-    let output = Command::new(env!("CARGO_BIN_EXE_recon"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tracelamp"))
         .args(["scan", root.to_str().unwrap(), "--format", "json"])
         .output()
         .expect("run recon");

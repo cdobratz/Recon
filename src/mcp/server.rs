@@ -1,10 +1,10 @@
-//! Recon as an MCP server.
+//! TraceLamp as an MCP server.
 //!
-//! stdio and streamable HTTP both call the static scanner. `recon scan` does
+//! stdio and streamable HTTP both call the static scanner. `tracelamp scan` does
 //! not start either server.
 
 use super::tools;
-use crate::config::ReconConfig;
+use crate::config::TraceLampConfig;
 use anyhow::{Context, Result};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
@@ -19,8 +19,8 @@ use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
-pub struct ReconMcp {
-    config: ReconConfig,
+pub struct TraceLampMcp {
+    config: TraceLampConfig,
 }
 
 #[derive(Debug, Deserialize, JsonSchema)]
@@ -40,12 +40,12 @@ struct ListParams {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 struct ExplainParams {
-    /// Stable rule id, for example recon/shell-execution.
+    /// Stable rule id, for example recon/shell-execution. The `recon/` prefix is unchanged.
     rule_id: String,
 }
 
 #[tool_router]
-impl ReconMcp {
+impl TraceLampMcp {
     #[tool(
         description = "Statically scan a repository. Does not execute code or open network connections."
     )]
@@ -64,7 +64,7 @@ impl ReconMcp {
         json_tool(tools::list_findings(&self.config, &path, severity.as_deref()).await)
     }
 
-    #[tool(description = "Explain one Recon rule id: help text, ASI mapping, and remediation.")]
+    #[tool(description = "Explain one TraceLamp rule id: help text, ASI mapping, and remediation.")]
     fn explain_finding(
         &self,
         Parameters(ExplainParams { rule_id }): Parameters<ExplainParams>,
@@ -85,10 +85,10 @@ impl ReconMcp {
 }
 
 #[tool_handler(
-    name = "recon",
-    instructions = "Static Recon scanner. Tools read files only. They do not spawn processes or open network connections."
+    name = "tracelamp",
+    instructions = "Static TraceLamp scanner. Tools read files only. They do not spawn processes or open network connections."
 )]
-impl ServerHandler for ReconMcp {}
+impl ServerHandler for TraceLampMcp {}
 
 fn json_tool(result: Result<serde_json::Value>) -> Result<String, String> {
     match result {
@@ -98,9 +98,9 @@ fn json_tool(result: Result<serde_json::Value>) -> Result<String, String> {
 }
 
 /// Serve MCP over stdin and stdout. Log lines go to stderr so they stay off the protocol stream.
-pub async fn serve_stdio(config: &ReconConfig) -> Result<()> {
-    eprintln!("recon mcp server (stdio)");
-    let running = ReconMcp {
+pub async fn serve_stdio(config: &TraceLampConfig) -> Result<()> {
+    eprintln!("tracelamp mcp server (stdio)");
+    let running = TraceLampMcp {
         config: config.clone(),
     }
     .serve(rmcp::transport::stdio())
@@ -114,7 +114,7 @@ pub async fn serve_stdio(config: &ReconConfig) -> Result<()> {
 }
 
 /// Serve MCP at `http://0.0.0.0:<port>/mcp` until Ctrl-C.
-pub async fn serve_http(port: u16, config: &ReconConfig) -> Result<()> {
+pub async fn serve_http(port: u16, config: &TraceLampConfig) -> Result<()> {
     let listener = TcpListener::bind(("0.0.0.0", port))
         .await
         .with_context(|| format!("bind 0.0.0.0:{port}"))?;
@@ -131,20 +131,20 @@ pub async fn serve_http(port: u16, config: &ReconConfig) -> Result<()> {
 /// Serve an already-bound listener until `shutdown` is cancelled.
 pub async fn serve_on(
     listener: TcpListener,
-    config: &ReconConfig,
+    config: &TraceLampConfig,
     shutdown: CancellationToken,
 ) -> Result<SocketAddr> {
     let addr = listener
         .local_addr()
         .context("read MCP HTTP listen address")?;
-    eprintln!("recon mcp server (http) http://{addr}/mcp");
+    eprintln!("tracelamp mcp server (http) http://{addr}/mcp");
     let recon = config.clone();
     let http_config = StreamableHttpServerConfig::default()
         .with_cancellation_token(shutdown.clone())
         .with_allowed_hosts(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
     let service = StreamableHttpService::new(
         move || {
-            Ok(ReconMcp {
+            Ok(TraceLampMcp {
                 config: recon.clone(),
             })
         },
@@ -171,7 +171,7 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let shutdown = CancellationToken::new();
-        let config = ReconConfig::default();
+        let config = TraceLampConfig::default();
         let server_shutdown = shutdown.clone();
         let server = tokio::spawn(async move {
             serve_on(listener, &config, server_shutdown).await.unwrap();
@@ -188,6 +188,10 @@ mod tests {
         })
         .await
         .expect("http mcp server accepts a client");
+
+        let info = client.peer_info().expect("server info");
+        let implementation = info.server_info.as_ref().expect("server implementation");
+        assert_eq!(implementation.name, "tracelamp");
 
         let tools = client.list_all_tools().await.unwrap();
         let names: Vec<_> = tools.iter().map(|tool| tool.name.to_string()).collect();

@@ -1,5 +1,5 @@
-//! `recon scan` and `recon analyze` (without `--llm`) must not spawn processes
-//! or open network connections.
+//! `tracelamp scan` and `tracelamp analyze` (without `--llm`) must not spawn
+//! processes or open network connections.
 
 use std::process::Command;
 
@@ -14,7 +14,7 @@ fn analyze_without_llm_does_not_spawn_or_connect() {
 }
 
 fn assert_static(args: &[&str]) {
-    let bin = env!("CARGO_BIN_EXE_recon");
+    let bin = env!("CARGO_BIN_EXE_tracelamp");
     let dir = tempfile::tempdir().expect("tempdir");
     std::fs::write(
         dir.path().join("main.go"),
@@ -82,7 +82,7 @@ fn assert_static(args: &[&str]) {
         network.join("\n")
     );
     for exec in &execs {
-        let allowed = exec.contains(bin) || exec.contains("/recon");
+        let allowed = exec.contains(bin) || exec.contains("/tracelamp") || exec.contains("/recon");
         assert!(
             allowed,
             "scan spawned a process:\n{exec}\nfull trace:\n{text}"

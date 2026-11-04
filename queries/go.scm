@@ -1,4 +1,4 @@
-; Go AST queries for Recon.
+; Go AST queries for TraceLamp.
 ; Shell callees include exec.Command and exec.CommandContext.
 ; Database callees include db.Exec, db.conn.Exec, tx.Exec, and stmt.Exec.
 

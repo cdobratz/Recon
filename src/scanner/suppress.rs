@@ -1,7 +1,8 @@
-//! Inline `recon:ignore <rule-id>` suppressions.
+//! Inline `tracelamp:ignore <rule-id>` suppressions.
 //!
-//! The marker is recognized on the finding's line and on the previous line,
-//! including `//`, `#`, and `/* */` comments.
+//! `recon:ignore` is still recognized. The marker is recognized on the
+//! finding's line and on the previous line, including `//`, `#`, and `/* */`
+//! comments.
 
 use super::Finding;
 
@@ -31,11 +32,17 @@ fn line_suppresses(lines: &[&str], line: usize, rule_id: &str) -> bool {
     ignored_rules(same).contains(&rule_id) || ignored_rules(previous).contains(&rule_id)
 }
 
+const SUPPRESS_MARKERS: &[&str] = &["tracelamp:ignore", "recon:ignore"];
+
 fn ignored_rules(line: &str) -> Vec<&str> {
-    let Some(index) = line.find("recon:ignore") else {
+    let Some((index, marker_len)) = SUPPRESS_MARKERS
+        .iter()
+        .filter_map(|marker| line.find(marker).map(|index| (index, marker.len())))
+        .min_by_key(|(index, _)| *index)
+    else {
         return Vec::new();
     };
-    let rest = &line[index + "recon:ignore".len()..];
+    let rest = &line[index + marker_len..];
     let rest = rest.split("*/").next().unwrap_or(rest);
     rest.split(|ch: char| ch.is_whitespace() || ch == ',')
         .filter(|token| !token.is_empty())
@@ -79,6 +86,22 @@ exec.Command(\"az\")
             finding(4, "recon/shell-execution"),
             finding(6, "recon/shell-execution"),
             finding(6, "recon/agent-cloud-spend"),
+        ];
+        let kept = apply(findings, source);
+        assert_eq!(kept.len(), 1);
+        assert_eq!(kept[0].line, 3);
+    }
+
+    #[test]
+    fn tracelamp_ignore_marker_suppresses_the_same_rules() {
+        let source = "\
+# tracelamp:ignore recon/shell-execution
+os.system(\"ls\")
+exec(\"ls\")
+";
+        let findings = vec![
+            finding(2, "recon/shell-execution"),
+            finding(3, "recon/shell-execution"),
         ];
         let kept = apply(findings, source);
         assert_eq!(kept.len(), 1);

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn scan(root: &Path, extra: &[&str]) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_recon"))
+    Command::new(env!("CARGO_BIN_EXE_tracelamp"))
         .arg("scan")
         .arg(root)
         .arg("--format")
@@ -309,7 +309,7 @@ fn cli_ignore_and_large_binary_files() {
 #[test]
 fn cyclonedx_exports_agent_inventory() {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/graph/chain");
-    let output = Command::new(env!("CARGO_BIN_EXE_recon"))
+    let output = Command::new(env!("CARGO_BIN_EXE_tracelamp"))
         .args(["scan", dir.to_str().unwrap(), "--format", "cyclonedx"])
         .output()
         .expect("cyclonedx scan");
@@ -323,7 +323,10 @@ fn cyclonedx_exports_agent_inventory() {
     assert_eq!(doc["bomFormat"], "CycloneDX");
     assert_eq!(doc["specVersion"], "1.6");
     assert_eq!(doc["version"], 1);
-    assert_eq!(doc["metadata"]["tools"]["components"][0]["name"], "recon");
+    assert_eq!(
+        doc["metadata"]["tools"]["components"][0]["name"],
+        "tracelamp"
+    );
     let names: Vec<&str> = doc["components"]
         .as_array()
         .unwrap()

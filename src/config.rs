@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-/// Top-level configuration for Recon
+/// Top-level configuration for TraceLamp
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct ReconConfig {
+pub struct TraceLampConfig {
     #[serde(default)]
     pub scan: ScanConfig,
     #[serde(default)]
@@ -232,18 +232,18 @@ impl Default for ReportConfig {
     }
 }
 
-impl ReconConfig {
+impl TraceLampConfig {
     /// Load config from file, falling back to defaults
     pub fn load(path: Option<&str>) -> Result<Self> {
         let config_path = match path {
             Some(p) => PathBuf::from(p),
-            None => Self::default_config_path(),
+            None => Self::active_config_path(),
         };
 
         if config_path.exists() {
             let contents = std::fs::read_to_string(&config_path)
                 .with_context(|| format!("Failed to read config: {}", config_path.display()))?;
-            let config: ReconConfig = toml::from_str(&contents)
+            let config: TraceLampConfig = toml::from_str(&contents)
                 .with_context(|| format!("Failed to parse config: {}", config_path.display()))?;
             Ok(config)
         } else {
@@ -252,23 +252,42 @@ impl ReconConfig {
         }
     }
 
-    /// Default config file path
+    /// Default config file path: `$CONFIG/tracelamp/config.toml`.
     pub fn default_config_path() -> PathBuf {
-        dirs::config_dir()
-            .unwrap_or_else(|| PathBuf::from("."))
-            .join("recon")
-            .join("config.toml")
+        config_home().join("tracelamp").join("config.toml")
+    }
+
+    /// Previous config file path, still read when the TraceLamp file is absent.
+    pub fn legacy_config_path() -> PathBuf {
+        config_home().join("recon").join("config.toml")
+    }
+
+    /// Prefer the TraceLamp file. Use the Recon file only when it is the one that exists.
+    pub fn active_config_path() -> PathBuf {
+        choose_config_path(&Self::default_config_path(), &Self::legacy_config_path())
+    }
+}
+
+fn config_home() -> PathBuf {
+    dirs::config_dir().unwrap_or_else(|| PathBuf::from("."))
+}
+
+fn choose_config_path(preferred: &Path, legacy: &Path) -> PathBuf {
+    if preferred.exists() || !legacy.exists() {
+        preferred.to_path_buf()
+    } else {
+        legacy.to_path_buf()
     }
 }
 
 /// Set a config value by dot-separated key
 pub fn set_value(key: &str, value: &str) -> Result<()> {
-    let config_path = ReconConfig::default_config_path();
+    let config_path = TraceLampConfig::active_config_path();
     let mut config = if config_path.exists() {
         let contents = std::fs::read_to_string(&config_path)?;
         toml::from_str(&contents)?
     } else {
-        ReconConfig::default()
+        TraceLampConfig::default()
     };
 
     match key {
@@ -308,7 +327,7 @@ pub fn set_value(key: &str, value: &str) -> Result<()> {
 
 /// Get a config value by dot-separated key
 pub fn get_value(key: &str) -> Result<()> {
-    let config = ReconConfig::load(None)?;
+    let config = TraceLampConfig::load(None)?;
     let value = match key {
         "llm.provider" => config.llm.provider,
         "llm.model" => config.llm.model.unwrap_or_default(),
@@ -325,7 +344,7 @@ pub fn get_value(key: &str) -> Result<()> {
 }
 
 /// Show full configuration
-pub fn show_config(config: &ReconConfig) -> Result<()> {
+pub fn show_config(config: &TraceLampConfig) -> Result<()> {
     let toml_str = toml::to_string_pretty(config)?;
     println!("{}", toml_str);
     Ok(())
@@ -333,7 +352,7 @@ pub fn show_config(config: &ReconConfig) -> Result<()> {
 
 /// Initialize default config file
 pub fn init_config() -> Result<()> {
-    let config_path = ReconConfig::default_config_path();
+    let config_path = TraceLampConfig::active_config_path();
     if config_path.exists() {
         println!("Config already exists at: {}", config_path.display());
         return Ok(());
@@ -341,9 +360,30 @@ pub fn init_config() -> Result<()> {
     if let Some(parent) = config_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let config = ReconConfig::default();
+    let config = TraceLampConfig::default();
     let toml_str = toml::to_string_pretty(&config)?;
     std::fs::write(&config_path, &toml_str)?;
     println!("Config initialized at: {}", config_path.display());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn prefers_tracelamp_config_and_falls_back_to_recon() {
+        let dir = tempfile::tempdir().unwrap();
+        let preferred = dir.path().join("tracelamp").join("config.toml");
+        let legacy = dir.path().join("recon").join("config.toml");
+        assert_eq!(choose_config_path(&preferred, &legacy), preferred);
+
+        std::fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+        std::fs::write(&legacy, "[scan]\n").unwrap();
+        assert_eq!(choose_config_path(&preferred, &legacy), legacy);
+
+        std::fs::create_dir_all(preferred.parent().unwrap()).unwrap();
+        std::fs::write(&preferred, "[scan]\n").unwrap();
+        assert_eq!(choose_config_path(&preferred, &legacy), preferred);
+    }
 }
