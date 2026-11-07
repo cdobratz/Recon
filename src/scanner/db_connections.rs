@@ -87,7 +87,7 @@ pub fn scan(path: &Path, source: &str, language: &str) -> Vec<Finding> {
                     line: line_num + 1,
                     title: format!("{} connection detected", pattern.db_type),
                     description: pattern.description.into(),
-                    snippet: line.trim().to_string(),
+                    snippet: super::secrets::redact_text(line.trim()),
                     language: language.into(),
                     metadata,
                 });

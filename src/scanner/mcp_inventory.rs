@@ -4,6 +4,7 @@
 //! start MCP servers, spawn package managers, or open the URLs it finds.
 
 use super::rules;
+use super::secrets;
 use super::Finding;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -245,7 +246,7 @@ fn scan_mcp_json(path: &Path, source: &str, language: &str) -> McpScan {
             let snippet = if command.is_empty() {
                 name.clone()
             } else {
-                format!("{command} {}", args.join(" ")).trim().to_string()
+                secrets::redact_text(format!("{command} {}", args.join(" ")).trim())
             };
             result.findings.push(rule_finding(
                 path,
@@ -269,15 +270,46 @@ fn scan_mcp_json(path: &Path, source: &str, language: &str) -> McpScan {
             ));
         }
 
-        agent.servers.push(inventory_server(
+        if let Some(headers) = obj.get("headers").and_then(|value| value.as_object()) {
+            for (key, value) in headers {
+                let Some(value) = value.as_str() else {
+                    continue;
+                };
+                if literal_secret(key, value) {
+                    result.findings.push(rule_finding(
+                        path,
+                        language,
+                        line_of(source, key),
+                        rules::MCP_SECRET_IN_ENV,
+                        format!("header {key}=***REDACTED***"),
+                        "mcp",
+                    ));
+                }
+            }
+        }
+
+        let safe_args: Vec<String> = launch_args
+            .iter()
+            .map(|arg| secrets::redact_text(arg))
+            .collect();
+        let mut server = inventory_server(
             name,
-            &launch,
-            &launch_args,
+            &secrets::redact_text(&launch),
+            &safe_args,
             env,
             &tools,
             &packages,
             &cloud,
-        ));
+        );
+        if let Some(headers) = obj.get("headers").and_then(|value| value.as_object()) {
+            for key in headers.keys() {
+                server.credentials.push(InventoryCredential {
+                    name: key.clone(),
+                    storage: "mcp-header".into(),
+                });
+            }
+        }
+        agent.servers.push(server);
     }
     if !agent.servers.is_empty() {
         result.inventory.agents.push(agent);
@@ -464,10 +496,13 @@ fn agent_name(path: &Path, kind: &str) -> String {
         return "LangChain".into();
     }
     let normalized = path.to_string_lossy().replace('\\', "/");
-    if normalized.contains("/.cursor/") || normalized.contains(".cursor/") {
+    if warp_mcp_config(&normalized) {
+        return "Warp".into();
+    }
+    if normalized.contains("/.cursor/") || normalized.starts_with(".cursor/") {
         return "Cursor".into();
     }
-    if normalized.contains("/.vscode/") || normalized.contains(".vscode/") {
+    if normalized.contains("/.vscode/") || normalized.starts_with(".vscode/") {
         return "VS Code".into();
     }
     match path.file_name().and_then(|n| n.to_str()).unwrap_or("") {
@@ -475,6 +510,11 @@ fn agent_name(path: &Path, kind: &str) -> String {
         "claude_desktop_config.json" => "Claude Desktop".into(),
         _ => "MCP client".into(),
     }
+}
+
+/// Official Warp file locations are `~/.warp/.mcp.json` and `<project>/.warp/.mcp.json`.
+fn warp_mcp_config(normalized: &str) -> bool {
+    normalized.ends_with("/.warp/.mcp.json") || normalized == ".warp/.mcp.json"
 }
 
 fn server_map(root: &Value) -> Option<&serde_json::Map<String, Value>> {
@@ -725,6 +765,7 @@ fn key_is_credential(key: &str) -> bool {
         "credential",
         "private_key",
         "access_key",
+        "authorization",
     ]
     .iter()
     .any(|part| key.contains(part))
@@ -1147,5 +1188,39 @@ mod tests {
         assert!(unpinned_packages(&[pinned]).is_empty());
         assert_eq!(unpinned_packages(&[loose]).len(), 1);
         assert_eq!(unpinned_packages(&[latest]).len(), 1);
+    }
+
+    #[test]
+    fn warp_mcp_json_is_not_labeled_claude_code() {
+        let source = r#"{"mcpServers":{"local":{"command":"tracelamp","args":["mcp","serve"]}}}"#;
+        let warp = scan(Path::new("/repo/.warp/.mcp.json"), source, "json");
+        assert_eq!(warp.inventory.agents[0].name, "Warp");
+        let claude = scan(Path::new("/repo/.mcp.json"), source, "json");
+        assert_eq!(claude.inventory.agents[0].name, "Claude Code");
+        let home = scan(Path::new("/home/dev/.warp/.mcp.json"), source, "json");
+        assert_eq!(home.inventory.agents[0].name, "Warp");
+    }
+
+    #[test]
+    fn remote_auth_headers_are_named_without_values() {
+        let token = "ghp_abcdefghijklmnopqrstuvwxyz0123456789";
+        let source = format!(
+            r#"{{"mcpServers":{{"remote":{{"url":"https://example.invalid/mcp","headers":{{"Authorization":"Bearer {token}"}}}}}}}}"#
+        );
+        let scanned = scan(Path::new("/repo/.warp/.mcp.json"), &source, "json");
+        let dumped = serde_json::to_string(&scanned.inventory).unwrap()
+            + &scanned
+                .findings
+                .iter()
+                .map(|finding| finding.snippet.clone())
+                .collect::<String>();
+        assert!(!dumped.contains(token), "{dumped}");
+        let cred = &scanned.inventory.agents[0].servers[0].credentials[0];
+        assert_eq!(cred.name, "Authorization");
+        assert_eq!(cred.storage, "mcp-header");
+        assert!(scanned
+            .findings
+            .iter()
+            .any(|finding| finding.snippet == "header Authorization=***REDACTED***"));
     }
 }

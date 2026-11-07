@@ -121,7 +121,7 @@ pub fn scan(path: &Path, source: &str, language: &str) -> Vec<Finding> {
                     line: line_num + 1,
                     title: format!("{} exposed", pattern.secret_type),
                     description: pattern.description.into(),
-                    snippet: redact_secret(line.trim()),
+                    snippet: redact_text(line.trim()),
                     language: language.into(),
                     metadata,
                 });
@@ -133,7 +133,7 @@ pub fn scan(path: &Path, source: &str, language: &str) -> Vec<Finding> {
 }
 
 /// Redact the actual secret value in the snippet for safe display
-fn redact_secret(line: &str) -> String {
+pub(crate) fn redact_text(line: &str) -> String {
     // Replace long alphanumeric sequences with redaction
     let re = Regex::new(r#"[A-Za-z0-9\-_/+=]{20,}"#).unwrap();
     re.replace_all(line, "***REDACTED***").to_string()

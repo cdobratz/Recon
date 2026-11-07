@@ -82,7 +82,7 @@ Each rule has a stable id, help text, an [OWASP Top 10 for Agentic Applications 
 | `recon/mcp-shell-without-approval` | ASI02, ASI05 | Shell or exec tool with no approval flag. |
 | `recon/agent-cloud-spend` | ASI02 | Agent or MCP server with cloud credentials, a cloud CLI / IaC apply, or a cloud write tool. Remediation: least privilege and [`azguard guard`](https://github.com/cdobratz/AzGuard#agent-guard). |
 
-Configs read for the inventory: `mcp.json`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `claude_desktop_config.json`, and LangChain tool lists.
+Configs read for the inventory: `mcp.json`, `.mcp.json`, `.warp/.mcp.json` (Warp), `.cursor/mcp.json`, `.vscode/mcp.json`, `claude_desktop_config.json`, and LangChain tool lists. A project `.mcp.json` that is not under `.warp/` stays attributed to Claude Code.
 
 ## Compatibility
 
@@ -97,7 +97,9 @@ These aliases keep existing setups working:
 
 `tracelamp config init` creates `~/.config/tracelamp/config.toml` when neither file exists. If only the Recon file exists, init and `config set` keep using that file instead of shadowing it with a new one. When both exist, the TraceLamp file wins.
 
-TraceLamp does not define its own environment variables, so there is no `RECON_` prefix to rename. Provider variables stay `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `OLLAMA_HOST`. Log filters follow the crate name, for example `RUST_LOG=tracelamp=debug`.
+There is no `RECON_` prefix. `TRACELAMP_SCAN_ROOT` is the approved directory for `tracelamp mcp serve` when `mcp.scan_root` is unset. Provider variables stay `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `OLLAMA_HOST`. Log filters follow the crate name, for example `RUST_LOG=tracelamp=debug`.
+
+Warp setup, including the stdio command and the local HTTP listener's lack of authentication, is in [docs/warp.md](docs/warp.md).
 
 Rule ids (`recon/shell-execution` and the rest) are unchanged.
 

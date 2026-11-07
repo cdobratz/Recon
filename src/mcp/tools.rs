@@ -9,7 +9,9 @@ use anyhow::Result;
 use serde_json::{json, Value};
 
 pub async fn scan_repo(config: &TraceLampConfig, path: &str) -> Result<Value> {
-    let results = scanner::run_scan(path, config, ScanOptions::default()).await?;
+    let path = crate::mcp::root::contain(config, path)?;
+    let results =
+        scanner::run_scan(&path.to_string_lossy(), config, ScanOptions::default()).await?;
     Ok(json!({
         "files_scanned": results.files_scanned,
         "finding_count": results.findings.len(),
@@ -23,7 +25,9 @@ pub async fn list_findings(
     path: &str,
     severity: Option<&str>,
 ) -> Result<Value> {
-    let results = scanner::run_scan(path, config, ScanOptions::default()).await?;
+    let path = crate::mcp::root::contain(config, path)?;
+    let results =
+        scanner::run_scan(&path.to_string_lossy(), config, ScanOptions::default()).await?;
     let findings: Vec<_> = results
         .findings
         .iter()
@@ -60,9 +64,10 @@ pub fn explain_finding(rule_id: &str) -> Value {
 }
 
 pub async fn agent_inventory(config: &TraceLampConfig, path: &str) -> Result<Value> {
+    let path = crate::mcp::root::contain(config, path)?;
     let only = ["agents".to_string(), "mcp".to_string()];
     let results = scanner::run_scan(
-        path,
+        &path.to_string_lossy(),
         config,
         ScanOptions {
             only: Some(&only),
@@ -83,7 +88,7 @@ fn compact(finding: &scanner::Finding) -> Value {
         "file": finding.file,
         "line": finding.line,
         "title": finding.title,
-        "snippet": finding.snippet,
+        "snippet": crate::scanner::secrets::redact_text(&finding.snippet),
     })
 }
 
@@ -106,7 +111,8 @@ mod tests {
         )
         .unwrap();
 
-        let config = TraceLampConfig::default();
+        let mut config = TraceLampConfig::default();
+        config.mcp.scan_root = Some(dir.path().display().to_string());
         let path = dir.path().to_str().unwrap();
         let scan = scan_repo(&config, path).await.unwrap();
         assert!(scan["finding_count"].as_u64().unwrap() >= 1);
