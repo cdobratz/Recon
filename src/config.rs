@@ -76,6 +76,9 @@ pub struct McpConfig {
     /// Port for HTTP transport
     #[serde(default = "default_port")]
     pub serve_port: u16,
+    /// Absolute directory `mcp serve` may read. Empty means unset.
+    #[serde(default)]
+    pub scan_root: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -211,6 +214,7 @@ impl Default for McpConfig {
             servers: vec![],
             serve_transport: default_transport(),
             serve_port: default_port(),
+            scan_root: None,
         }
     }
 }

@@ -26,6 +26,8 @@ max_snippet_chars = 240
 servers = []
 serve_transport = "stdio"
 serve_port = 3000
+# scan_root is required before `tracelamp mcp serve` will read a path.
+# Set it to an absolute directory, or set TRACELAMP_SCAN_ROOT.
 
 [skills]
 directory = "skills"

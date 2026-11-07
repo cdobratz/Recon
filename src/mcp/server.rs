@@ -47,7 +47,7 @@ struct ExplainParams {
 #[tool_router]
 impl TraceLampMcp {
     #[tool(
-        description = "Statically scan a repository. Does not execute code or open network connections."
+        description = "Statically scan a directory inside the configured scan root. Does not execute code or open network connections."
     )]
     async fn scan_repo(
         &self,
@@ -56,7 +56,9 @@ impl TraceLampMcp {
         json_tool(tools::scan_repo(&self.config, &path).await)
     }
 
-    #[tool(description = "List static findings, optionally filtered by severity.")]
+    #[tool(
+        description = "List static findings inside the configured scan root, optionally filtered by severity."
+    )]
     async fn list_findings(
         &self,
         Parameters(ListParams { path, severity }): Parameters<ListParams>,
@@ -74,7 +76,7 @@ impl TraceLampMcp {
     }
 
     #[tool(
-        description = "Return the agent, MCP server, tool, data store, and credential inventory."
+        description = "Return the agent, MCP server, tool, data store, and credential inventory for a directory inside the configured scan root. Header values are not included."
     )]
     async fn agent_inventory(
         &self,
