@@ -49,10 +49,20 @@
 
       <section id="install">
         <p class="kicker">02 Install</p>
-        <h2>Build from source</h2>
-        <p class="missing">No release archives are published, and the crate is not on crates.io. There is no install command to download a binary. Build the tagged source you cloned.</p>
+        <h2>Download or build</h2>
+        <p>v0.1.0 binaries are on the <a href="https://github.com/cdobratz/TraceLamp/releases/tag/v0.1.0">GitHub release</a>. Download the archive for your machine. <code>SHA256SUMS</code> on that page is the hash list.</p>
+        <ul>
+          <li>Linux x86_64: <code>tracelamp-0.1.0-x86_64-unknown-linux-gnu.tar.gz</code></li>
+          <li>Linux aarch64: <code>tracelamp-0.1.0-aarch64-unknown-linux-gnu.tar.gz</code></li>
+          <li>macOS Intel: <code>tracelamp-0.1.0-x86_64-apple-darwin.tar.gz</code></li>
+          <li>macOS Apple Silicon: <code>tracelamp-0.1.0-aarch64-apple-darwin.tar.gz</code></li>
+          <li>Windows x86_64: <code>tracelamp-0.1.0-x86_64-pc-windows-msvc.zip</code></li>
+        </ul>
+        <p>Each archive contains <code>tracelamp</code> and <code>recon</code> (the same CLI), plus <code>LICENSE</code>, <code>NOTICE</code>, and <code>README.md</code>. On Windows the programs are <code>tracelamp.exe</code> and <code>recon.exe</code>.</p>
+        <p>The crate is not on crates.io. The same tag can be built from source:</p>
         <pre><code>git clone https://github.com/cdobratz/TraceLamp.git
 cd TraceLamp
+git checkout v0.1.0
 cargo build --locked --release</code></pre>
         <p>That produces two binaries:</p>
         <ul>
@@ -60,7 +70,7 @@ cargo build --locked --release</code></pre>
           <li><code>target/release/recon</code>, the same CLI under the old command name</li>
         </ul>
         <p>On Windows the file names end in <code>.exe</code>. HTTP uses rustls, so the build does not need OpenSSL.</p>
-        <p>When a git tag <code>vX.Y.Z</code> matches the <code>version</code> in <code>Cargo.toml</code>, GitHub Actions builds archives for Linux x86_64, Linux aarch64, macOS Intel, macOS Apple Silicon, and Windows x86_64. Until that tag exists, those files are not on the release page. Do not expect a download URL to resolve.</p>
+        <p>The release archives are built when the git tag matches the <code>version</code> in <code>Cargo.toml</code>. v0.1.0 is that tag.</p>
         <p class="note">Checks used in this repo: <code>cargo test --locked</code> (the static-scan tests need <code>strace</code>) and <code>cargo clippy --locked --all-targets -- -D warnings</code>.</p>
       </section>
 

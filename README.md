@@ -169,7 +169,7 @@ The product site is static HTML in `site/public`. It is not a scan service. Depl
 
 ## Releases
 
-No prebuilt archives are published. Build from source with `cargo build --locked --release`. A tag `vX.Y.Z` that matches `Cargo.toml` runs [.github/workflows/release.yml](.github/workflows/release.yml). See [RELEASE.md](RELEASE.md). The workflow does not publish a crate.
+v0.1.0 archives are on the [GitHub release](https://github.com/cdobratz/TraceLamp/releases/tag/v0.1.0). Each archive contains `tracelamp` and `recon`. Source build: `git checkout v0.1.0` then `cargo build --locked --release`. See [RELEASE.md](RELEASE.md). The workflow does not publish a crate.
 
 ## License
 
