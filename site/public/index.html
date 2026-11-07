@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TraceLamp</title>
+  <meta name="description" content="TraceLamp is a static, no-execute scanner for AI agent and MCP risk in a repository. Build it from source. The HTTP MCP server stays on your machine.">
+  <link rel="canonical" href="https://tracelamp.dev/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <div class="frame">
+    <aside class="rail">
+      <a class="mark" href="/">
+        <strong>TraceLamp</strong>
+        <span>0.1.0 · static scanner</span>
+      </a>
+      <nav aria-label="Sections">
+        <a href="#scanner">01 Scanner</a>
+        <a href="#install">02 Install</a>
+        <a href="#use">03 Use</a>
+        <a href="#mcp">04 Local MCP</a>
+        <a href="#sarif">05 Reports</a>
+        <a href="#limits">06 Limits</a>
+        <a href="#docs">07 Docs</a>
+      </nav>
+      <p class="rail-foot">Apache-2.0<br>Poietes LLC</p>
+    </aside>
+
+    <main class="sheet" id="content">
+      <header class="hero">
+        <h1>Reads the files. Does not run them.</h1>
+        <div class="trace" aria-hidden="true"><i></i></div>
+        <p class="lede">TraceLamp scans a repository for what AI agents and MCP servers can touch: tools, data stores, credentials, and cloud spend.</p>
+        <p class="meta">A scan is static, no-execute, and meant for CI. It never spawns a process and never opens a network connection.</p>
+      </header>
+
+      <section id="scanner">
+        <p class="kicker">01 Scanner</p>
+        <h2>What a scan actually does</h2>
+        <p>You pass a path. TraceLamp reads files under that path and applies in-process rules. MCP config files are parsed as text. The scanner does not start those servers to ask them for a tool list.</p>
+        <p>Tree-sitter covers Python, JavaScript, TypeScript, Go, and Rust for functions, API endpoints, and the difference between a shell call and a database call. Other languages use a regex fallback. <code>exec.Command</code> is shell. <code>db.Exec</code> is not.</p>
+        <p>Hidden paths such as <code>.cursor/mcp.json</code> are still scanned. Default skips include <code>.git</code>, <code>node_modules</code>, <code>target</code>, <code>vendor</code>, <code>dist</code>, <code>build</code>, <code>__pycache__</code>, <code>.venv</code>, and <code>.go</code>. The walk also honors <code>.gitignore</code>, <code>.tracelampignore</code>, and <code>.reconignore</code>. Binary files and files larger than 1 MiB are skipped.</p>
+      </section>
+
+      <section id="install">
+        <p class="kicker">02 Install</p>
+        <h2>Build from source</h2>
+        <p class="missing">No release archives are published, and the crate is not on crates.io. There is no install command to download a binary. Build the tagged source you cloned.</p>
+        <pre><code>git clone https://github.com/cdobratz/TraceLamp.git
+cd TraceLamp
+cargo build --locked --release</code></pre>
+        <p>That produces two binaries:</p>
+        <ul>
+          <li><code>target/release/tracelamp</code></li>
+          <li><code>target/release/recon</code>, the same CLI under the old command name</li>
+        </ul>
+        <p>On Windows the file names end in <code>.exe</code>. HTTP uses rustls, so the build does not need OpenSSL.</p>
+        <p>When a git tag <code>vX.Y.Z</code> matches the <code>version</code> in <code>Cargo.toml</code>, GitHub Actions builds archives for Linux x86_64, Linux aarch64, macOS Intel, macOS Apple Silicon, and Windows x86_64. Until that tag exists, those files are not on the release page. Do not expect a download URL to resolve.</p>
+        <p class="note">Checks used in this repo: <code>cargo test --locked</code> (the static-scan tests need <code>strace</code>) and <code>cargo clippy --locked --all-targets -- -D warnings</code>.</p>
+      </section>
+
+      <section id="use">
+        <p class="kicker">03 Use</p>
+        <h2>Commands</h2>
+        <p>The binary name is <code>tracelamp</code>. Global flags are <code>--config &lt;file&gt;</code> and <code>-v</code>, repeated for more log detail. <code>RUST_LOG</code> overrides that filter.</p>
+        <pre><code>tracelamp scan &lt;path&gt;
+tracelamp scan &lt;path&gt; --format json
+tracelamp scan &lt;path&gt; --format sarif
+tracelamp scan &lt;path&gt; --format mermaid
+tracelamp scan &lt;path&gt; --format cyclonedx
+tracelamp scan &lt;path&gt; --only agents,mcp
+tracelamp scan &lt;path&gt; --write-baseline tracelamp-baseline.json
+tracelamp scan &lt;path&gt; --baseline tracelamp-baseline.json
+tracelamp analyze &lt;path&gt;
+tracelamp analyze &lt;path&gt; --llm --provider openai --max-cost 0.25
+tracelamp report &lt;path&gt; --format sarif --output report.sarif
+tracelamp skill add ./todo.toml
+tracelamp skill list
+tracelamp skill run todo --target &lt;path&gt;
+tracelamp skill remove todo
+tracelamp agent add ./reviewer.toml
+tracelamp agent list
+tracelamp agent run reviewer --target &lt;path&gt;
+tracelamp agent run reviewer --target &lt;path&gt; --llm
+tracelamp config init
+tracelamp config show</code></pre>
+        <p><code>scan</code> writes the terminal by default. Formats are <code>terminal</code>, <code>json</code>, <code>sarif</code>, <code>mermaid</code>, and <code>cyclonedx</code>. <code>--only</code> and <code>--ignore</code> take comma-separated lists. <code>--ignore</code> uses gitignore syntax.</p>
+        <p><code>--baseline</code> prints findings whose fingerprint is not already in the file and exits 1 when any remain. <code>--write-baseline</code> records the current findings and does not fail the run. A fingerprint is the SHA-256 of the rule id, the path relative to the scan root, and the snippet with whitespace collapsed. Line numbers are not part of it.</p>
+        <p><code>analyze</code> scores the static findings. Add <code>--llm</code> to also send those findings and short snippets to a model. The default provider is local Ollama (<code>llama3.2</code> at <code>http://localhost:11434</code>, or <code>OLLAMA_HOST</code>). <code>--provider openai</code> reads <code>OPENAI_API_KEY</code>. <code>--provider anthropic</code> reads <code>ANTHROPIC_API_KEY</code>. The run stops when the estimated cost would pass <code>llm.max_cost_usd</code> (0.25 by default). Ollama is priced at zero.</p>
+        <p>A skill is a TOML file of regex search patterns. An agent runs the static scan, then its skills, then the rule scores. <code>--llm</code> or <code>use_llm = true</code> in the agent file is what turns the model on.</p>
+      </section>
+
+      <section id="mcp">
+        <p class="kicker">04 Local MCP</p>
+        <h2>Keep the server on your machine</h2>
+        <p>TraceLamp can speak MCP. That server is part of the CLI you run locally. This website does not scan repositories, and there is no hosted TraceLamp API.</p>
+        <p>Stdio is the default. A client config can point at the binary:</p>
+        <pre><code>{
+  "mcpServers": {
+    "tracelamp": {
+      "command": "tracelamp",
+      "args": ["mcp", "serve"]
+    }
+  }
+}</code></pre>
+        <p>The server name is <code>tracelamp</code>. Log lines go to stderr so they stay off the protocol stream. Tools:</p>
+        <ul>
+          <li><code>scan_repo</code> reads a repository path on that machine.</li>
+          <li><code>list_findings</code> reads the same kind of path and can filter by severity.</li>
+          <li><code>explain_finding</code> explains one rule id.</li>
+          <li><code>agent_inventory</code> returns the agent, MCP server, tool, data store, and credential inventory.</li>
+        </ul>
+        <p>HTTP is optional and still local:</p>
+        <pre><code>tracelamp mcp serve --transport http --port 3000
+tracelamp mcp connect "tracelamp mcp serve"
+tracelamp mcp connect http://127.0.0.1:3000/mcp</code></pre>
+        <p>The HTTP process listens on <code>0.0.0.0:&lt;port&gt;</code> and serves <code>/mcp</code>. The accepted hosts are <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>, and <code>0.0.0.0</code>. There is no login and no tenant boundary. <code>scan_repo</code> reads whatever path the caller passes on that machine. Do not publish this port.</p>
+        <p><code>tracelamp scan</code> does not start the MCP server. <code>tracelamp mcp connect</code> either spawns a stdio command or opens an <code>http://</code> or <code>https://</code> endpoint.</p>
+      </section>
+
+      <section id="sarif">
+        <p class="kicker">05 Reports</p>
+        <h2>JSON, SARIF, Mermaid, CycloneDX</h2>
+        <p>JSON includes <code>inventory</code> (agent, MCP server or tool, data store, credential) and <code>inventory_mermaid</code>. <code>--format mermaid</code> prints only the diagram. <code>--format cyclonedx</code> prints a CycloneDX 1.6 document of that inventory. The export does not fetch a schema and does not contact a registry.</p>
+        <p>SARIF output is 2.1.0. The tool driver name is <code>tracelamp</code>. <code>informationUri</code> is <code>https://tracelamp.dev</code>. Each built-in rule is listed under <code>tool.driver.rules</code> with help text and its OWASP Agentic ASI tags. Result <code>ruleId</code> values keep the <code>recon/</code> prefix so existing baselines and suppressions stay valid.</p>
+        <p>Suppress a finding with <code>tracelamp:ignore &lt;rule-id&gt;</code> on the same line or the previous line. <code>recon:ignore &lt;rule-id&gt;</code> still works. <code>//</code>, <code>#</code>, and <code>/* */</code> comments all work. Several rule ids can be separated by spaces or commas.</p>
+      </section>
+
+      <section id="limits">
+        <p class="kicker">06 Limits</p>
+        <h2>What it will not do</h2>
+        <ul>
+          <li><code>scan</code>, <code>report</code>, and <code>analyze</code> without <code>--llm</code> only read files. They do not spawn <code>npx</code>, <code>uvx</code>, a shell, or any other process, and they do not connect to MCP URLs, package registries, or LLM APIs.</li>
+          <li><code>--llm</code> is off unless you set it. It sends findings and short snippets, not whole files.</li>
+          <li>The MCP HTTP listener is a local process with a host allowlist and no authentication. It is not a multi-user scan backend.</li>
+          <li>Config, skills, and baseline files live on the local disk. There is no database.</li>
+          <li>TraceLamp defines no <code>RECON_</code> environment variables. Provider variables stay <code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, and <code>OLLAMA_HOST</code>.</li>
+        </ul>
+      </section>
+
+      <section id="docs">
+        <p class="kicker">07 Docs</p>
+        <h2>Rules, config, aliases</h2>
+        <p>Rule ids are stable. They are the strings stored in baselines, SARIF, and inline suppressions.</p>
+        <table>
+          <thead>
+            <tr><th>Rule</th><th>ASI</th><th>What it flags</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>recon/shell-execution</code></td>
+              <td>ASI05</td>
+              <td>Real process spawns (<code>exec.Command</code>, <code>subprocess</code>, <code>os.system</code>, <code>child_process</code>). Not <code>db.Exec</code>.</td>
+            </tr>
+            <tr>
+              <td><code>recon/mcp-unpinned-package</code></td>
+              <td>ASI04</td>
+              <td><code>npx</code> or <code>uvx</code> package with no exact version. <code>pkg@1.2.3</code> and <code>pkg==1.2.3</code> do not match.</td>
+            </tr>
+            <tr>
+              <td><code>recon/mcp-remote-cve-2025-6514</code></td>
+              <td>ASI05</td>
+              <td><code>mcp-remote</code> versions 0.0.5 through 0.1.15 (CVE-2025-6514).</td>
+            </tr>
+            <tr>
+              <td><code>recon/mcp-secret-in-env</code></td>
+              <td>ASI03</td>
+              <td>Literal secret in an MCP <code>env</code> value. <code>${VAR}</code> references do not match.</td>
+            </tr>
+            <tr>
+              <td><code>recon/mcp-filesystem-root</code></td>
+              <td>ASI02</td>
+              <td>Filesystem root set to <code>/</code> or <code>~</code>.</td>
+            </tr>
+            <tr>
+              <td><code>recon/mcp-shell-without-approval</code></td>
+              <td>ASI02, ASI05</td>
+              <td>Shell or exec tool with no approval flag.</td>
+            </tr>
+            <tr>
+              <td><code>recon/agent-cloud-spend</code></td>
+              <td>ASI02</td>
+              <td>Agent or MCP server with cloud credentials, a cloud CLI or IaC apply, or a cloud write tool.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Configs read for the inventory: <code>mcp.json</code>, <code>.mcp.json</code>, <code>.cursor/mcp.json</code>, <code>.vscode/mcp.json</code>, <code>claude_desktop_config.json</code>, and LangChain tool lists.</p>
+        <h2>Config file</h2>
+        <p><code>tracelamp config init</code> creates <code>~/.config/tracelamp/config.toml</code> when neither config file exists. If only <code>~/.config/recon/config.toml</code> exists, init and <code>config set</code> keep using that file. When both exist, the TraceLamp file wins.</p>
+        <p><code>config set</code> and <code>config get</code> accept <code>llm.provider</code>, <code>llm.model</code>, <code>llm.api_key</code>, <code>llm.base_url</code>, <code>llm.max_cost_usd</code>, <code>llm.max_findings</code>, <code>llm.max_snippet_chars</code>, <code>report.default_format</code>, and <code>report.min_severity</code>. The default provider is <code>ollama</code>. The default serve transport in the sample config is <code>stdio</code> on port 3000. The running command uses its own <code>--transport</code> and <code>--port</code> flags.</p>
+        <h2>Names that still work</h2>
+        <table>
+          <thead>
+            <tr><th>Current</th><th>Still accepted</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>tracelamp</code></td><td><code>recon</code> command, installed as a second binary</td></tr>
+            <tr><td><code>~/.config/tracelamp/config.toml</code></td><td><code>~/.config/recon/config.toml</code> when the TraceLamp file is absent</td></tr>
+            <tr><td><code>.tracelampignore</code></td><td><code>.reconignore</code></td></tr>
+            <tr><td><code>tracelamp:ignore</code></td><td><code>recon:ignore</code></td></tr>
+          </tbody>
+        </table>
+        <p>Skills are copied into the directory in <code>skills.directory</code>, which defaults to <code>skills</code> relative to the working directory.</p>
+      </section>
+
+      <footer class="colophon">
+        <p>TraceLamp 0.1.0. Source: <a href="https://github.com/cdobratz/TraceLamp">github.com/cdobratz/TraceLamp</a>. Licensed under the <a href="https://github.com/cdobratz/TraceLamp/blob/main/LICENSE">Apache License, Version 2.0</a>. Copyright 2026 Poietes LLC.</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>
