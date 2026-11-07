@@ -1,0 +1,19 @@
+name: Site
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    name: site and archive layout
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the static site
+        run: python3 site/check.py
+
+      - name: Check release archive layout
+        run: python3 scripts/package_release.py --self-test

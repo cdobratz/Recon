@@ -1,0 +1,12 @@
+{
+  "name": "tracelamp-site",
+  "private": true,
+  "description": "Static product site for TraceLamp, deployed as Cloudflare Workers Static Assets.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "check": "python3 check.py"
+  },
+  "devDependencies": {
+    "wrangler": "4.158.0"
+  }
+}

@@ -163,6 +163,14 @@ tracelamp config show
 
 `analyze` scores the static findings. Add `--llm` to also ask a model about those findings. A skill is a TOML file of regex search patterns; `skill run` and `agent run` apply them while reading files. An agent runs the static scan, then its skills, then the rule scores. `--llm` or `use_llm = true` in the agent file is what turns the model on.
 
+## Site
+
+The product site is static HTML in `site/public`. It is not a scan service. Deploy notes are in [site/DEPLOY.md](site/DEPLOY.md).
+
+## Releases
+
+No prebuilt archives are published. Build from source with `cargo build --locked --release`. A tag `vX.Y.Z` that matches `Cargo.toml` runs [.github/workflows/release.yml](.github/workflows/release.yml). See [RELEASE.md](RELEASE.md). The workflow does not publish a crate.
+
 ## License
 
 TraceLamp is licensed under the [Apache License, Version 2.0](LICENSE). Copyright (c) 2026 Poietes LLC. See [NOTICE](NOTICE).
