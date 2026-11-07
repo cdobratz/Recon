@@ -29,7 +29,7 @@ REQUIRED_TEXT = (
     "OLLAMA_HOST",
     "recon/shell-execution",
     "recon/agent-cloud-spend",
-    "No release archives are published",
+    "https://github.com/cdobratz/TraceLamp/releases/tag/v0.1.0",
 )
 FORBIDDEN = (
     "\u2014",
